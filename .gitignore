@@ -1,0 +1,25 @@
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Build outputs
+/batasd
+/sandboxd
+/bin/
+/dist/
+
+# Go test and coverage artifacts
+*.test
+*.out
+coverage.*
+
+# Runtime and temporary files
+/tmp/
+/work/
+/sandboxd-work/
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/
