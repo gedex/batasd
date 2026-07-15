@@ -1,0 +1,172 @@
+package config
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/gedex/batasd/internal/submission"
+)
+
+type Config struct {
+	AppEnv      string
+	HTTP        HTTPConfig
+	Database    DatabaseConfig
+	Auth        AuthConfig
+	Sandbox     SandboxConfig
+	Queue       QueueConfig
+	Submissions SubmissionConfig
+}
+
+type HTTPConfig struct {
+	Addr string
+}
+
+type DatabaseConfig struct {
+	URL           string
+	RunMigrations bool
+}
+
+type AuthConfig struct {
+	Header string
+	Tokens map[string]struct{}
+}
+
+type SandboxConfig struct {
+	Driver  string
+	WorkDir string
+}
+
+type QueueConfig struct {
+	Workers int
+}
+
+type SubmissionConfig struct {
+	DefaultLimits submission.Limits
+}
+
+func Load() (Config, error) {
+	cfg := Config{
+		AppEnv: envString("APP_ENV", "local"),
+		HTTP: HTTPConfig{
+			Addr: envString("HTTP_ADDR", ":18080"),
+		},
+		Database: DatabaseConfig{
+			URL:           envString("DATABASE_URL", "postgres://sandbox:sandbox@localhost:5432/sandbox?sslmode=disable"),
+			RunMigrations: envBool("DATABASE_RUN_MIGRATIONS", true),
+		},
+		Auth: AuthConfig{
+			Header: envString("AUTHN_HEADER", "X-Auth-Token"),
+			Tokens: envTokenSet("AUTHN_TOKENS", "dev-token"),
+		},
+		Sandbox: SandboxConfig{
+			Driver:  envString("SANDBOX_DRIVER", "direct"),
+			WorkDir: envString("SANDBOX_WORK_DIR", os.TempDir()+"/sandboxd-work"),
+		},
+		Queue: QueueConfig{
+			Workers: envInt("QUEUE_WORKERS", 1),
+		},
+		Submissions: SubmissionConfig{
+			DefaultLimits: submission.Limits{
+				CPUTimeMS:    envInt64("LIMIT_CPU_TIME_MS", 5000),
+				CPUExtraMS:   envInt64("LIMIT_CPU_EXTRA_MS", 1000),
+				WallTimeMS:   envInt64("LIMIT_WALL_TIME_MS", 10000),
+				MemoryKB:     envInt64("LIMIT_MEMORY_KB", 128000),
+				StackKB:      envInt64("LIMIT_STACK_KB", 64000),
+				MaxProcesses: envInt("LIMIT_MAX_PROCESSES", 60),
+				MaxOutputKB:  envInt64("LIMIT_MAX_OUTPUT_KB", 1024),
+				MaxFileKB:    envInt64("LIMIT_MAX_FILE_KB", 1024),
+				Network:      envBool("LIMIT_NETWORK", false),
+				Runs:         envInt("LIMIT_RUNS", 1),
+			},
+		},
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return Config{}, err
+	}
+
+	return cfg, nil
+}
+
+func (c Config) Validate() error {
+	if c.AppEnv == "" {
+		return errors.New("APP_ENV cannot be empty")
+	}
+
+	switch c.Sandbox.Driver {
+	case "direct", "docker", "isolate":
+	default:
+		return fmt.Errorf("unsupported SANDBOX_DRIVER %q", c.Sandbox.Driver)
+	}
+
+	if c.AppEnv == "production" && c.Sandbox.Driver != "isolate" {
+		return errors.New("production requires SANDBOX_DRIVER=isolate")
+	}
+
+	if c.Queue.Workers < 1 {
+		return errors.New("QUEUE_WORKERS must be at least 1")
+	}
+
+	return nil
+}
+
+func envString(key, fallback string) string {
+	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+		return value
+	}
+	return fallback
+}
+
+func envBool(key string, fallback bool) bool {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func envInt(key string, fallback int) int {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func envInt64(key string, fallback int64) int64 {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func envTokenSet(key, fallback string) map[string]struct{} {
+	raw := envString(key, fallback)
+	tokens := map[string]struct{}{}
+	for _, token := range strings.Split(raw, ",") {
+		token = strings.TrimSpace(token)
+		if token != "" {
+			tokens[token] = struct{}{}
+		}
+	}
+	return tokens
+}

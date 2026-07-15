@@ -1,0 +1,20 @@
+[
+  {
+    "slug": "python-3.12",
+    "name": "Python",
+    "version": "3.12",
+    "source_file": "main.py",
+    "compile": [],
+    "run": ["python3", "main.py"],
+    "enabled": true
+  },
+  {
+    "slug": "node-22",
+    "name": "JavaScript",
+    "version": "Node.js 22",
+    "source_file": "main.js",
+    "compile": [],
+    "run": ["node", "main.js"],
+    "enabled": true
+  }
+]
