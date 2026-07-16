@@ -15,7 +15,7 @@ This project is in early development. The current implementation includes:
 - Direct local execution worker for development.
 - Initial submission create and fetch endpoints.
 
-Sandbox drivers are being built incrementally. The current implementation supports the `direct` development driver. Docker is planned for local development, while production is intended to use `isolate`.
+Sandbox drivers are being built incrementally. The current implementation supports the `direct` and Docker development drivers. Production is intended to use `isolate`.
 
 ## Requirements
 
@@ -30,6 +30,12 @@ Start PostgreSQL:
 docker compose up -d postgres
 ```
 
+Build the local Docker runner image when using `SANDBOX_DRIVER=docker`:
+
+```bash
+docker compose build runner
+```
+
 Run the API:
 
 ```bash
@@ -41,7 +47,7 @@ The API listens on `:18080` by default.
 List languages:
 
 ```bash
-curl -H 'X-Auth-Token: dev-token' http://localhost:18080/v1/languages
+curl -H 'Authorization: Bearer dev-token' http://localhost:18080/v1/languages
 ```
 
 Create a submission:
@@ -49,14 +55,14 @@ Create a submission:
 ```bash
 curl -X POST http://localhost:18080/v1/submissions \
   -H 'Content-Type: application/json' \
-  -H 'X-Auth-Token: dev-token' \
+  -H 'Authorization: Bearer dev-token' \
   -d '{"language":"python-3.12","source":"print(\"hello\")","input":"","expected_output":"hello"}'
 ```
 
 Fetch the result with the returned token:
 
 ```bash
-curl -H 'X-Auth-Token: dev-token' http://localhost:18080/v1/submissions/sub_xxxxx
+curl -H 'Authorization: Bearer dev-token' http://localhost:18080/v1/submissions/sub_xxxxx
 ```
 
 Run tests:
@@ -77,9 +83,15 @@ Important defaults:
 
 - `HTTP_ADDR=:18080`
 - `DATABASE_URL=postgres://sandbox:sandbox@localhost:5432/sandbox?sslmode=disable`
-- `AUTHN_HEADER=X-Auth-Token`
 - `AUTHN_TOKENS=dev-token`
 - `SANDBOX_DRIVER=direct`
+- `SANDBOX_DOCKER_IMAGE=batasd-runner:local`
+
+For Docker-backed local execution:
+
+```bash
+env SANDBOX_DRIVER=docker GOCACHE=/private/tmp/codeexec-go-cache GOMODCACHE=/private/tmp/codeexec-go-mod go run ./cmd/batasd
+```
 
 ## License
 

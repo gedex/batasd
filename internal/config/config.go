@@ -33,16 +33,17 @@ type DatabaseConfig struct {
 	RunMigrations bool
 }
 
-// AuthConfig describes token authentication for API requests.
+// AuthConfig describes bearer token authentication for API requests.
 type AuthConfig struct {
-	Header string
 	Tokens map[string]struct{}
 }
 
 // SandboxConfig selects the execution sandbox and its working directory.
 type SandboxConfig struct {
-	Driver  string
-	WorkDir string
+	Driver       string
+	WorkDir      string
+	DockerImage  string
+	DockerBinary string
 }
 
 // QueueConfig controls worker concurrency.
@@ -67,12 +68,13 @@ func Load() (Config, error) {
 			RunMigrations: envBool("DATABASE_RUN_MIGRATIONS", true),
 		},
 		Auth: AuthConfig{
-			Header: envString("AUTHN_HEADER", "X-Auth-Token"),
 			Tokens: envTokenSet("AUTHN_TOKENS", "dev-token"),
 		},
 		Sandbox: SandboxConfig{
-			Driver:  envString("SANDBOX_DRIVER", "direct"),
-			WorkDir: envString("SANDBOX_WORK_DIR", os.TempDir()+"/batasd-work"),
+			Driver:       envString("SANDBOX_DRIVER", "direct"),
+			WorkDir:      envString("SANDBOX_WORK_DIR", os.TempDir()+"/batasd-work"),
+			DockerImage:  envString("SANDBOX_DOCKER_IMAGE", "batasd-runner:local"),
+			DockerBinary: envString("SANDBOX_DOCKER_BINARY", "docker"),
 		},
 		Queue: QueueConfig{
 			Workers: envInt("QUEUE_WORKERS", 1),

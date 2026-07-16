@@ -66,9 +66,12 @@ func (e *Engine) Run(ctx context.Context, sub *submission.Submission) submission
 		return result(status.SandboxError, finishedAt, withMessage(err.Error()))
 	}
 	defer os.RemoveAll(dir)
+	if err := os.Chmod(dir, 0o777); err != nil {
+		return result(status.SandboxError, finishedAt, withMessage(err.Error()))
+	}
 
 	sourcePath := filepath.Join(dir, lang.SourceFile)
-	if err := os.WriteFile(sourcePath, []byte(sub.Source), 0o600); err != nil {
+	if err := os.WriteFile(sourcePath, []byte(sub.Source), 0o644); err != nil {
 		return result(status.SandboxError, finishedAt, withMessage(err.Error()))
 	}
 

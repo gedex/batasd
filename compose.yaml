@@ -15,5 +15,13 @@ services:
       timeout: 5s
       retries: 12
 
+  runner:
+    image: batasd-runner:local
+    build:
+      context: .
+      dockerfile: docker/runner/Dockerfile
+    profiles:
+      - runner
+
 volumes:
   postgres-data:

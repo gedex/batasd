@@ -21,6 +21,7 @@ import (
 	postgresrepo "github.com/gedex/batasd/internal/repository/postgres"
 	"github.com/gedex/batasd/internal/sandbox"
 	"github.com/gedex/batasd/internal/sandbox/direct"
+	dockersandbox "github.com/gedex/batasd/internal/sandbox/docker"
 	"github.com/gedex/batasd/internal/submission"
 	"github.com/gedex/batasd/internal/worker"
 )
@@ -69,6 +70,8 @@ func main() {
 	switch cfg.Sandbox.Driver {
 	case "direct":
 		runner = direct.NewRunner()
+	case "docker":
+		runner = dockersandbox.NewRunner(cfg.Sandbox.DockerBinary, cfg.Sandbox.DockerImage)
 	default:
 		logger.Error("unsupported sandbox driver", "driver", cfg.Sandbox.Driver)
 		os.Exit(1)
