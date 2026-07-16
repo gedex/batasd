@@ -7,6 +7,7 @@ import (
 	"github.com/gedex/batasd/internal/config"
 )
 
+// AuthMiddleware rejects requests without a configured authentication token.
 func AuthMiddleware(cfg config.AuthConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -1,3 +1,4 @@
+// Package httpapi wires HTTP routes, authentication, and JSON responses.
 package httpapi
 
 import (
@@ -14,6 +15,7 @@ import (
 	"github.com/gedex/batasd/internal/submission"
 )
 
+// Dependencies contains the services needed by the HTTP router.
 type Dependencies struct {
 	Config      config.Config
 	Logger      *slog.Logger
@@ -22,6 +24,7 @@ type Dependencies struct {
 	Queue       *memory.Queue
 }
 
+// NewRouter builds the HTTP handler tree for the public API.
 func NewRouter(deps Dependencies) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)

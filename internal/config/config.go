@@ -1,3 +1,4 @@
+// Package config loads and validates batasd runtime configuration.
 package config
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/gedex/batasd/internal/submission"
 )
 
+// Config contains all runtime settings needed to start batasd.
 type Config struct {
 	AppEnv      string
 	HTTP        HTTPConfig
@@ -20,33 +22,40 @@ type Config struct {
 	Submissions SubmissionConfig
 }
 
+// HTTPConfig controls the public HTTP server.
 type HTTPConfig struct {
 	Addr string
 }
 
+// DatabaseConfig controls PostgreSQL connectivity and migration behavior.
 type DatabaseConfig struct {
 	URL           string
 	RunMigrations bool
 }
 
+// AuthConfig describes token authentication for API requests.
 type AuthConfig struct {
 	Header string
 	Tokens map[string]struct{}
 }
 
+// SandboxConfig selects the execution sandbox and its working directory.
 type SandboxConfig struct {
 	Driver  string
 	WorkDir string
 }
 
+// QueueConfig controls worker concurrency.
 type QueueConfig struct {
 	Workers int
 }
 
+// SubmissionConfig contains default submission execution limits.
 type SubmissionConfig struct {
 	DefaultLimits submission.Limits
 }
 
+// Load reads configuration from environment variables and applies defaults.
 func Load() (Config, error) {
 	cfg := Config{
 		AppEnv: envString("APP_ENV", "local"),
@@ -63,7 +72,7 @@ func Load() (Config, error) {
 		},
 		Sandbox: SandboxConfig{
 			Driver:  envString("SANDBOX_DRIVER", "direct"),
-			WorkDir: envString("SANDBOX_WORK_DIR", os.TempDir()+"/sandboxd-work"),
+			WorkDir: envString("SANDBOX_WORK_DIR", os.TempDir()+"/batasd-work"),
 		},
 		Queue: QueueConfig{
 			Workers: envInt("QUEUE_WORKERS", 1),
@@ -91,6 +100,7 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
+// Validate reports whether c is internally consistent and safe to start.
 func (c Config) Validate() error {
 	if c.AppEnv == "" {
 		return errors.New("APP_ENV cannot be empty")

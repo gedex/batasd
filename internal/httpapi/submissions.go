@@ -10,10 +10,12 @@ import (
 	"github.com/gedex/batasd/internal/submission"
 )
 
+// SubmissionHandler serves submission create and fetch endpoints.
 type SubmissionHandler struct {
 	Service *submission.Service
 }
 
+// Create handles submission creation requests.
 func (h SubmissionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req submission.CreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -35,6 +37,7 @@ func (h SubmissionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, submission.ToCreatedResponse(sub))
 }
 
+// Get handles submission fetch requests.
 func (h SubmissionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	sub, err := h.Service.Get(r.Context(), chi.URLParam(r, "token"))
 	if errors.Is(err, submission.ErrNotFound) {

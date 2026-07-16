@@ -1,3 +1,4 @@
+// Batasd serves the code execution API and runs background submission workers.
 package main
 
 import (
@@ -12,12 +13,16 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/gedex/batasd/internal/config"
+	"github.com/gedex/batasd/internal/execution"
 	"github.com/gedex/batasd/internal/httpapi"
 	"github.com/gedex/batasd/internal/language"
 	"github.com/gedex/batasd/internal/migrations"
 	"github.com/gedex/batasd/internal/queue/memory"
 	postgresrepo "github.com/gedex/batasd/internal/repository/postgres"
+	"github.com/gedex/batasd/internal/sandbox"
+	"github.com/gedex/batasd/internal/sandbox/direct"
 	"github.com/gedex/batasd/internal/submission"
+	"github.com/gedex/batasd/internal/worker"
 )
 
 func main() {
@@ -59,6 +64,22 @@ func main() {
 
 	submissionRepo := postgresrepo.NewSubmissionRepository(db)
 	queue := memory.NewQueue()
+
+	var runner sandbox.Runner
+	switch cfg.Sandbox.Driver {
+	case "direct":
+		runner = direct.NewRunner()
+	default:
+		logger.Error("unsupported sandbox driver", "driver", cfg.Sandbox.Driver)
+		os.Exit(1)
+	}
+
+	executionEngine := execution.NewEngine(languages, runner, cfg.Sandbox.WorkDir)
+	workerRunner := worker.New(logger, queue, submissionRepo, executionEngine)
+	for i := 1; i <= cfg.Queue.Workers; i++ {
+		go workerRunner.Run(ctx, i)
+	}
+
 	submissionService := submission.NewService(submission.ServiceConfig{
 		Repository: submissionRepo,
 		Queue:      queue,

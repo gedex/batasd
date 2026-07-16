@@ -1,3 +1,4 @@
+// Package postgres stores submissions in PostgreSQL.
 package postgres
 
 import (
@@ -13,14 +14,17 @@ import (
 	"github.com/gedex/batasd/internal/submission"
 )
 
+// SubmissionRepository persists submissions and execution results in PostgreSQL.
 type SubmissionRepository struct {
 	db *pgxpool.Pool
 }
 
+// NewSubmissionRepository creates a submission repository backed by db.
 func NewSubmissionRepository(db *pgxpool.Pool) *SubmissionRepository {
 	return &SubmissionRepository{db: db}
 }
 
+// Create inserts sub as a new submission row.
 func (r *SubmissionRepository) Create(ctx context.Context, sub *submission.Submission) error {
 	arguments, err := json.Marshal(sub.Arguments)
 	if err != nil {
@@ -75,6 +79,7 @@ func (r *SubmissionRepository) Create(ctx context.Context, sub *submission.Submi
 	return err
 }
 
+// FindByToken returns the submission identified by token.
 func (r *SubmissionRepository) FindByToken(ctx context.Context, token string) (*submission.Submission, error) {
 	row := r.db.QueryRow(ctx, `SELECT
 		token,
@@ -191,6 +196,60 @@ func (r *SubmissionRepository) FindByToken(ctx context.Context, token string) (*
 	}
 
 	return sub, nil
+}
+
+// MarkProcessing records that token has started execution.
+func (r *SubmissionRepository) MarkProcessing(ctx context.Context, token string, startedAt time.Time) error {
+	tag, err := r.db.Exec(ctx, `UPDATE submissions
+		SET status_code = $2,
+			started_at = $3,
+			updated_at = $3
+		WHERE token = $1`, token, "processing", startedAt)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return submission.ErrNotFound
+	}
+	return nil
+}
+
+// StoreResult records the final result for token.
+func (r *SubmissionRepository) StoreResult(ctx context.Context, token string, result submission.Result) error {
+	tag, err := r.db.Exec(ctx, `UPDATE submissions
+		SET status_code = $2,
+			stdout = $3,
+			stderr = $4,
+			compile_output = $5,
+			message = $6,
+			exit_code = $7,
+			exit_signal = $8,
+			time_ms = $9,
+			wall_time_ms = $10,
+			memory_kb = $11,
+			finished_at = $12,
+			updated_at = $12
+		WHERE token = $1`,
+		token,
+		result.StatusCode,
+		result.Stdout,
+		result.Stderr,
+		result.CompileOutput,
+		result.Message,
+		result.ExitCode,
+		result.ExitSignal,
+		result.TimeMS,
+		result.WallTimeMS,
+		result.MemoryKB,
+		result.FinishedAt,
+	)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return submission.ErrNotFound
+	}
+	return nil
 }
 
 func textPtr(value pgtype.Text) *string {

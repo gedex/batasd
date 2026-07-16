@@ -1,3 +1,4 @@
+// Package language loads and serves the embedded language catalog.
 package language
 
 import (
@@ -11,6 +12,7 @@ import (
 //go:embed catalog/languages.json
 var catalogFS embed.FS
 
+// Language describes how a supported programming language is compiled and run.
 type Language struct {
 	Slug       string   `json:"slug"`
 	Name       string   `json:"name"`
@@ -21,11 +23,13 @@ type Language struct {
 	Enabled    bool     `json:"enabled"`
 }
 
+// Registry stores enabled languages by slug.
 type Registry struct {
 	bySlug map[string]Language
 	list   []Language
 }
 
+// LoadCatalog loads the embedded language catalog and validates its entries.
 func LoadCatalog() (*Registry, error) {
 	data, err := catalogFS.ReadFile("catalog/languages.json")
 	if err != nil {
@@ -61,6 +65,7 @@ func LoadCatalog() (*Registry, error) {
 	return &Registry{bySlug: bySlug, list: languages}, nil
 }
 
+// List returns enabled languages sorted by slug.
 func (r *Registry) List() []Language {
 	out := make([]Language, 0, len(r.list))
 	for _, lang := range r.list {
@@ -71,6 +76,7 @@ func (r *Registry) List() []Language {
 	return out
 }
 
+// Get returns the enabled language identified by slug.
 func (r *Registry) Get(slug string) (Language, bool) {
 	lang, ok := r.bySlug[slug]
 	if !ok || !lang.Enabled {

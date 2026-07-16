@@ -6,6 +6,7 @@ import (
 	"github.com/gedex/batasd/internal/status"
 )
 
+// Response is the public representation of a submission.
 type Response struct {
 	Token           string        `json:"token"`
 	Language        string        `json:"language,omitempty"`
@@ -28,6 +29,7 @@ type Response struct {
 	CompilerOptions []string      `json:"compiler_options,omitempty"`
 }
 
+// ToResponse converts sub into its public API shape.
 func ToResponse(sub *Submission) Response {
 	return Response{
 		Token:           sub.Token,
@@ -52,6 +54,7 @@ func ToResponse(sub *Submission) Response {
 	}
 }
 
+// ToCreatedResponse returns the public response for a newly queued submission.
 func ToCreatedResponse(sub *Submission) map[string]any {
 	return map[string]any{
 		"token":  sub.Token,

@@ -1,3 +1,4 @@
+// Package migrations runs embedded PostgreSQL schema migrations.
 package migrations
 
 import (
@@ -12,6 +13,7 @@ import (
 //go:embed sql/*.sql
 var migrationFS embed.FS
 
+// Run applies all embedded migrations that have not yet been recorded.
 func Run(ctx context.Context, db *pgxpool.Pool) error {
 	if _, err := db.Exec(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (
 		version text PRIMARY KEY,

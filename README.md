@@ -11,10 +11,11 @@ This project is in early development. The current implementation includes:
 - Embedded database migrations.
 - Embedded language catalog.
 - Token-based API authentication.
-- In-memory queue stub for local development.
+- In-memory queue for local development.
+- Direct local execution worker for development.
 - Initial submission create and fetch endpoints.
 
-Execution workers and sandbox drivers are being built incrementally. The local development sandbox targets are `direct` and Docker, while production is intended to use `isolate`.
+Sandbox drivers are being built incrementally. The current implementation supports the `direct` development driver. Docker is planned for local development, while production is intended to use `isolate`.
 
 ## Requirements
 
@@ -32,7 +33,7 @@ docker compose up -d postgres
 Run the API:
 
 ```bash
-env GOCACHE=/private/tmp/codeexec-go-cache GOMODCACHE=/private/tmp/codeexec-go-mod go run ./cmd/sandboxd
+env GOCACHE=/private/tmp/codeexec-go-cache GOMODCACHE=/private/tmp/codeexec-go-mod go run ./cmd/batasd
 ```
 
 The API listens on `:18080` by default.
@@ -50,6 +51,12 @@ curl -X POST http://localhost:18080/v1/submissions \
   -H 'Content-Type: application/json' \
   -H 'X-Auth-Token: dev-token' \
   -d '{"language":"python-3.12","source":"print(\"hello\")","input":"","expected_output":"hello"}'
+```
+
+Fetch the result with the returned token:
+
+```bash
+curl -H 'X-Auth-Token: dev-token' http://localhost:18080/v1/submissions/sub_xxxxx
 ```
 
 Run tests:

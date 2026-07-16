@@ -1,3 +1,4 @@
+// Package submission defines submission models, service contracts, and results.
 package submission
 
 import (
@@ -6,8 +7,10 @@ import (
 	"time"
 )
 
+// ErrNotFound is returned when a submission token does not exist.
 var ErrNotFound = errors.New("submission not found")
 
+// Limits defines the execution resource limits for a submission.
 type Limits struct {
 	CPUTimeMS    int64 `json:"cpu_time_ms"`
 	CPUExtraMS   int64 `json:"cpu_extra_time_ms"`
@@ -21,15 +24,18 @@ type Limits struct {
 	Runs         int   `json:"runs"`
 }
 
+// AdditionalFiles carries an archive of files to place in the execution directory.
 type AdditionalFiles struct {
 	Encoding string `json:"encoding"`
 	Content  string `json:"content"`
 }
 
+// Callback configures webhook delivery for a completed submission.
 type Callback struct {
 	URL string `json:"url"`
 }
 
+// CreateRequest is the API payload for creating a submission.
 type CreateRequest struct {
 	Source          string           `json:"source"`
 	Language        string           `json:"language"`
@@ -42,6 +48,7 @@ type CreateRequest struct {
 	Callback        *Callback        `json:"callback"`
 }
 
+// Submission is a persisted code execution request and its current result state.
 type Submission struct {
 	Token           string
 	Language        string
@@ -70,11 +77,30 @@ type Submission struct {
 	UpdatedAt       time.Time
 }
 
+// Result is the final execution result stored for a submission.
+type Result struct {
+	StatusCode    string
+	Stdout        *string
+	Stderr        *string
+	CompileOutput *string
+	Message       *string
+	ExitCode      *int
+	ExitSignal    *string
+	TimeMS        *int64
+	WallTimeMS    *int64
+	MemoryKB      *int64
+	FinishedAt    time.Time
+}
+
+// Repository persists submissions and their status transitions.
 type Repository interface {
 	Create(ctx context.Context, submission *Submission) error
 	FindByToken(ctx context.Context, token string) (*Submission, error)
+	MarkProcessing(ctx context.Context, token string, startedAt time.Time) error
+	StoreResult(ctx context.Context, token string, result Result) error
 }
 
+// Queue accepts submissions for asynchronous execution.
 type Queue interface {
 	Enqueue(ctx context.Context, token string) error
 }

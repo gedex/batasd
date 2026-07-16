@@ -14,10 +14,12 @@ import (
 	"github.com/gedex/batasd/internal/status"
 )
 
+// LanguageRegistry resolves enabled languages by slug.
 type LanguageRegistry interface {
 	Get(slug string) (language.Language, bool)
 }
 
+// ServiceConfig provides dependencies for a Service.
 type ServiceConfig struct {
 	Repository Repository
 	Queue      Queue
@@ -25,6 +27,7 @@ type ServiceConfig struct {
 	Limits     Limits
 }
 
+// Service coordinates submission validation, persistence, and queueing.
 type Service struct {
 	repo      Repository
 	queue     Queue
@@ -32,6 +35,7 @@ type Service struct {
 	limits    Limits
 }
 
+// NewService creates a submission service from cfg.
 func NewService(cfg ServiceConfig) *Service {
 	return &Service{
 		repo:      cfg.Repository,
@@ -41,6 +45,7 @@ func NewService(cfg ServiceConfig) *Service {
 	}
 }
 
+// Create validates req, persists a queued submission, and enqueues it for execution.
 func (s *Service) Create(ctx context.Context, req CreateRequest) (*Submission, error) {
 	if strings.TrimSpace(req.Source) == "" {
 		return nil, ValidationError{Field: "source", Message: "source is required"}
@@ -98,6 +103,7 @@ func (s *Service) Create(ctx context.Context, req CreateRequest) (*Submission, e
 	return sub, nil
 }
 
+// Get returns the submission identified by token.
 func (s *Service) Get(ctx context.Context, token string) (*Submission, error) {
 	token = strings.TrimSpace(token)
 	if token == "" {
@@ -173,11 +179,13 @@ func newToken() (string, error) {
 	return "sub_" + strings.ToLower(encoded), nil
 }
 
+// ValidationError describes an invalid field in an API request.
 type ValidationError struct {
 	Field   string
 	Message string
 }
 
+// Error returns the field-qualified validation message.
 func (e ValidationError) Error() string {
 	return e.Field + ": " + e.Message
 }
