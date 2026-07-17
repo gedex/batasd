@@ -54,6 +54,24 @@ func ToResponse(sub *Submission) Response {
 	}
 }
 
+// ToResultResponse converts sub plus result into the completed public API shape.
+func ToResultResponse(sub *Submission, result Result) Response {
+	completed := *sub
+	completed.StatusCode = result.StatusCode
+	completed.Stdout = result.Stdout
+	completed.Stderr = result.Stderr
+	completed.CompileOutput = result.CompileOutput
+	completed.Message = result.Message
+	completed.ExitCode = result.ExitCode
+	completed.ExitSignal = result.ExitSignal
+	completed.TimeMS = result.TimeMS
+	completed.WallTimeMS = result.WallTimeMS
+	completed.MemoryKB = result.MemoryKB
+	completed.FinishedAt = &result.FinishedAt
+	completed.UpdatedAt = result.FinishedAt
+	return ToResponse(&completed)
+}
+
 // ToCreatedResponse returns the public response for a newly queued submission.
 func ToCreatedResponse(sub *Submission) map[string]any {
 	return map[string]any{

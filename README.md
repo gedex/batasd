@@ -14,6 +14,7 @@ This project is in early development. The current implementation includes:
 - In-memory queue for local development.
 - Direct local execution worker for development.
 - Initial submission create and fetch endpoints.
+- Completion callbacks with attempt logging.
 
 Sandbox drivers are being built incrementally. The current implementation supports the `direct` and Docker development drivers, plus an initial Linux `isolate` driver for production-style execution.
 
@@ -65,14 +66,30 @@ Fetch the result with the returned token:
 curl -H 'Authorization: Bearer dev-token' http://localhost:18080/v1/submissions/sub_xxxxx
 ```
 
+Create a submission with a callback:
+
+```bash
+scripts/callback-receiver.sh
+```
+
+```bash
+curl -X POST http://localhost:18080/v1/submissions \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer dev-token' \
+  -d '{"language":"python-3.12","source":"print(\"hello\")","expected_output":"hello","callback":{"url":"http://127.0.0.1:9000/callback"}}'
+```
+
+The callback receiver gets a `POST` with the same JSON shape returned by `GET /v1/submissions/{token}` after execution finishes. Delivery is attempted once in the MVP and recorded in `callback_attempts`.
+
 Submit a source file with language detection:
 
 ```bash
 scripts/submit.sh ./main.py
 scripts/submit.sh --url http://localhost:18082 --wait ./main.js
+scripts/submit.sh --callback-url http://127.0.0.1:9000/callback --wait ./main.py
 ```
 
-The helper defaults to `http://localhost:18080/v1/submissions` and `Authorization: Bearer dev-token`. Override those with `--url`, `BATASD_SUBMISSIONS_URL`, `--token`, or `BATASD_TOKEN`.
+The helper defaults to `http://localhost:18080/v1/submissions` and `Authorization: Bearer dev-token`. Override those with `--url`, `BATASD_SUBMISSIONS_URL`, `--token`, or `BATASD_TOKEN`. Add callbacks with `--callback-url` or `BATASD_CALLBACK_URL`.
 
 Run tests:
 
@@ -99,6 +116,7 @@ Important defaults:
 - `SANDBOX_ISOLATE_BOX_ID_START=0`
 - `SANDBOX_ISOLATE_BOX_ID_COUNT=16`
 - `SANDBOX_ISOLATE_CGROUP=true`
+- `CALLBACK_TIMEOUT_MS=5000`
 
 The language catalog can set per-language default limits. `node-22` currently uses a larger memory and process profile than the global defaults because V8 reserves substantial virtual memory at startup under isolate.
 

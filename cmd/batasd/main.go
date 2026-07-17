@@ -13,6 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/gedex/batasd/internal/callback"
 	"github.com/gedex/batasd/internal/config"
 	"github.com/gedex/batasd/internal/execution"
 	"github.com/gedex/batasd/internal/httpapi"
@@ -97,7 +98,8 @@ func main() {
 	}
 
 	executionEngine := execution.NewEngine(languages, runner, cfg.Sandbox.WorkDir)
-	workerRunner := worker.New(logger, queue, submissionRepo, executionEngine)
+	callbackDeliverer := callback.NewDeliverer(submissionRepo, cfg.Callback.Timeout)
+	workerRunner := worker.New(logger, queue, submissionRepo, executionEngine, callbackDeliverer)
 	var workerWG sync.WaitGroup
 	for i := 1; i <= cfg.Queue.Workers; i++ {
 		workerWG.Add(1)

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gedex/batasd/internal/submission"
 )
@@ -19,6 +20,7 @@ type Config struct {
 	Auth        AuthConfig
 	Sandbox     SandboxConfig
 	Queue       QueueConfig
+	Callback    CallbackConfig
 	Submissions SubmissionConfig
 }
 
@@ -55,6 +57,11 @@ type QueueConfig struct {
 	Workers int
 }
 
+// CallbackConfig controls completed-submission webhook delivery.
+type CallbackConfig struct {
+	Timeout time.Duration
+}
+
 // SubmissionConfig contains default submission execution limits.
 type SubmissionConfig struct {
 	DefaultLimits submission.Limits
@@ -86,6 +93,9 @@ func Load() (Config, error) {
 		},
 		Queue: QueueConfig{
 			Workers: envInt("QUEUE_WORKERS", 1),
+		},
+		Callback: CallbackConfig{
+			Timeout: time.Duration(envInt("CALLBACK_TIMEOUT_MS", 5000)) * time.Millisecond,
 		},
 		Submissions: SubmissionConfig{
 			DefaultLimits: submission.Limits{
@@ -137,6 +147,10 @@ func (c Config) Validate() error {
 
 	if c.Queue.Workers < 1 {
 		return errors.New("QUEUE_WORKERS must be at least 1")
+	}
+
+	if c.Callback.Timeout <= 0 {
+		return errors.New("CALLBACK_TIMEOUT_MS must be greater than 0")
 	}
 
 	if c.Sandbox.Driver == "isolate" && c.Sandbox.IsolateBoxIDCount < c.Queue.Workers {

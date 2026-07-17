@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/gedex/batasd/internal/callback"
 	"github.com/gedex/batasd/internal/submission"
 )
 
@@ -250,6 +251,28 @@ func (r *SubmissionRepository) StoreResult(ctx context.Context, token string, re
 		return submission.ErrNotFound
 	}
 	return nil
+}
+
+// CreateCallbackAttempt inserts one callback delivery attempt row.
+func (r *SubmissionRepository) CreateCallbackAttempt(ctx context.Context, attempt callback.Attempt) error {
+	if attempt.CreatedAt.IsZero() {
+		attempt.CreatedAt = time.Now().UTC()
+	}
+
+	_, err := r.db.Exec(ctx, `INSERT INTO callback_attempts (
+		submission_token,
+		attempt,
+		status_code,
+		error,
+		created_at
+	) VALUES ($1, $2, $3, $4, $5)`,
+		attempt.SubmissionToken,
+		attempt.Attempt,
+		attempt.StatusCode,
+		attempt.Error,
+		attempt.CreatedAt,
+	)
+	return err
 }
 
 func textPtr(value pgtype.Text) *string {

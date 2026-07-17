@@ -15,6 +15,7 @@ Options:
   --input-file PATH           Read stdin string from file.
   --expected-output VALUE     Expected stdout string.
   --expected-output-file PATH Read expected stdout string from file.
+  --callback-url URL          Callback URL to POST the completed result to.
   --wait                      Poll until the submission leaves queued/processing.
   --interval SECONDS          Poll interval for --wait. Default: 1
   -h, --help                  Show this help.
@@ -22,11 +23,13 @@ Options:
 Environment:
   BATASD_SUBMISSIONS_URL      Overrides the submissions endpoint.
   BATASD_TOKEN                Overrides the bearer token.
+  BATASD_CALLBACK_URL         Adds a callback URL to the submission payload.
   BATASD_POLL_INTERVAL        Overrides the --wait poll interval.
 
 Examples:
   scripts/submit.sh ./main.py
   scripts/submit.sh --url http://localhost:18082 ./main.js
+  scripts/submit.sh --callback-url http://127.0.0.1:9000/callback ./main.py
   scripts/submit.sh --wait --expected-output "hello" ./main.py
 USAGE
 }
@@ -130,6 +133,7 @@ input_file=""
 expected_output=""
 expected_output_file=""
 expected_output_set=false
+callback_url="${BATASD_CALLBACK_URL:-}"
 wait=false
 interval="${BATASD_POLL_INTERVAL:-1}"
 program_path=""
@@ -179,6 +183,11 @@ while [[ $# -gt 0 ]]; do
       expected_output_file="$2"
       expected_output=""
       expected_output_set=true
+      shift 2
+      ;;
+    --callback-url)
+      [[ $# -ge 2 ]] || die "--callback-url requires a value"
+      callback_url="$2"
       shift 2
       ;;
     --wait)
@@ -235,7 +244,7 @@ payload_path="$(mktemp)"
 response_path="$(mktemp)"
 trap 'rm -f "$payload_path" "$response_path"' EXIT
 
-BATASD_SUBMIT_INPUT="$input" BATASD_SUBMIT_EXPECTED_OUTPUT="$expected_output" python3 - \
+BATASD_SUBMIT_INPUT="$input" BATASD_SUBMIT_EXPECTED_OUTPUT="$expected_output" BATASD_SUBMIT_CALLBACK_URL="$callback_url" python3 - \
   "$program_path" \
   "$language" \
   "$input_file" \
@@ -267,6 +276,10 @@ if expected_output_set:
     if expected_output_file:
         expected_output = pathlib.Path(expected_output_file).read_text()
     payload["expected_output"] = expected_output
+
+callback_url = os.environ.get("BATASD_SUBMIT_CALLBACK_URL", "")
+if callback_url:
+    payload["callback"] = {"url": callback_url}
 
 json.dump(payload, sys.stdout)
 print()

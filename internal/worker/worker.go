@@ -29,21 +29,28 @@ type Engine interface {
 	Run(ctx context.Context, submission *submission.Submission) submission.Result
 }
 
-// Worker processes queued submissions.
-type Worker struct {
-	logger *slog.Logger
-	queue  Queue
-	repo   Repository
-	engine Engine
+// CallbackDispatcher delivers completed submission callbacks.
+type CallbackDispatcher interface {
+	Deliver(ctx context.Context, sub *submission.Submission, result submission.Result) error
 }
 
-// New creates a worker using queue, repo, and engine.
-func New(logger *slog.Logger, queue Queue, repo Repository, engine Engine) *Worker {
+// Worker processes queued submissions.
+type Worker struct {
+	logger    *slog.Logger
+	queue     Queue
+	repo      Repository
+	engine    Engine
+	callbacks CallbackDispatcher
+}
+
+// New creates a worker using queue, repo, engine, and callbacks.
+func New(logger *slog.Logger, queue Queue, repo Repository, engine Engine, callbacks CallbackDispatcher) *Worker {
 	return &Worker{
-		logger: logger,
-		queue:  queue,
-		repo:   repo,
-		engine: engine,
+		logger:    logger,
+		queue:     queue,
+		repo:      repo,
+		engine:    engine,
+		callbacks: callbacks,
 	}
 }
 
@@ -94,4 +101,10 @@ func (w *Worker) process(ctx context.Context, logger *slog.Logger, token string)
 	}
 
 	logger.Info("submission completed", "token", token, "status", result.StatusCode)
+	if w.callbacks != nil {
+		if err := w.callbacks.Deliver(ctx, sub, result); err != nil {
+			logger.Error("deliver submission callback", "token", token, "error", err)
+			return
+		}
+	}
 }
