@@ -50,7 +50,8 @@ func (s *Service) Create(ctx context.Context, req CreateRequest) (*Submission, e
 	if strings.TrimSpace(req.Source) == "" {
 		return nil, ValidationError{Field: "source", Message: "source is required"}
 	}
-	if _, ok := s.languages.Get(req.Language); !ok {
+	lang, ok := s.languages.Get(req.Language)
+	if !ok {
 		return nil, ValidationError{Field: "language", Message: "unsupported language"}
 	}
 	if req.Callback != nil && strings.TrimSpace(req.Callback.URL) != "" {
@@ -60,7 +61,7 @@ func (s *Service) Create(ctx context.Context, req CreateRequest) (*Submission, e
 	}
 
 	now := time.Now().UTC()
-	limits := s.limits
+	limits := mergeLanguageLimits(s.limits, lang.DefaultLimits)
 	if req.Limits != nil {
 		limits = mergeLimits(limits, *req.Limits)
 	}
@@ -110,6 +111,45 @@ func (s *Service) Get(ctx context.Context, token string) (*Submission, error) {
 		return nil, ValidationError{Field: "token", Message: "token is required"}
 	}
 	return s.repo.FindByToken(ctx, token)
+}
+
+func mergeLanguageLimits(defaults Limits, overrides *language.LimitOverrides) Limits {
+	if overrides == nil {
+		return defaults
+	}
+
+	out := defaults
+	if overrides.CPUTimeMS > 0 {
+		out.CPUTimeMS = overrides.CPUTimeMS
+	}
+	if overrides.CPUExtraMS > 0 {
+		out.CPUExtraMS = overrides.CPUExtraMS
+	}
+	if overrides.WallTimeMS > 0 {
+		out.WallTimeMS = overrides.WallTimeMS
+	}
+	if overrides.MemoryKB > 0 {
+		out.MemoryKB = overrides.MemoryKB
+	}
+	if overrides.StackKB > 0 {
+		out.StackKB = overrides.StackKB
+	}
+	if overrides.MaxProcesses > 0 {
+		out.MaxProcesses = overrides.MaxProcesses
+	}
+	if overrides.MaxOutputKB > 0 {
+		out.MaxOutputKB = overrides.MaxOutputKB
+	}
+	if overrides.MaxFileKB > 0 {
+		out.MaxFileKB = overrides.MaxFileKB
+	}
+	if overrides.Runs > 0 {
+		out.Runs = overrides.Runs
+	}
+	if overrides.Network != nil {
+		out.Network = *overrides.Network
+	}
+	return out
 }
 
 func mergeLimits(defaults, overrides Limits) Limits {

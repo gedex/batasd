@@ -65,6 +65,15 @@ Fetch the result with the returned token:
 curl -H 'Authorization: Bearer dev-token' http://localhost:18080/v1/submissions/sub_xxxxx
 ```
 
+Submit a source file with language detection:
+
+```bash
+scripts/submit.sh ./main.py
+scripts/submit.sh --url http://localhost:18082 --wait ./main.js
+```
+
+The helper defaults to `http://localhost:18080/v1/submissions` and `Authorization: Bearer dev-token`. Override those with `--url`, `BATASD_SUBMISSIONS_URL`, `--token`, or `BATASD_TOKEN`.
+
 Run tests:
 
 ```bash
@@ -90,6 +99,8 @@ Important defaults:
 - `SANDBOX_ISOLATE_BOX_ID_START=0`
 - `SANDBOX_ISOLATE_BOX_ID_COUNT=16`
 - `SANDBOX_ISOLATE_CGROUP=true`
+
+The language catalog can set per-language default limits. `node-22` currently uses a larger memory and process profile than the global defaults because V8 reserves substantial virtual memory at startup under isolate.
 
 For Docker-backed local execution:
 
