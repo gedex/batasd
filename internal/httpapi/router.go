@@ -97,6 +97,7 @@ func publicConfig(cfg config.Config) map[string]any {
 		},
 		"submissions": map[string]any{
 			"default_limits": cfg.Submissions.DefaultLimits,
+			"max_limits":     cfg.Submissions.MaxLimits,
 		},
 		"callbacks": map[string]any{
 			"timeout_ms": cfg.Callback.Timeout.Milliseconds(),

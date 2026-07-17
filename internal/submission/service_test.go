@@ -25,6 +25,10 @@ func TestCreateAppliesLanguageDefaultLimits(t *testing.T) {
 			},
 		},
 		Limits: defaultTestLimits(),
+		MaxLimits: Limits{
+			MemoryKB:     3145728,
+			MaxProcesses: 512,
+		},
 	})
 
 	sub, err := service.Create(context.Background(), CreateRequest{
@@ -86,6 +90,40 @@ func TestCreateRequestLimitsOverrideLanguageDefaultLimits(t *testing.T) {
 	}
 	if sub.Limits.MaxProcesses != 512 {
 		t.Fatalf("MaxProcesses = %d, want 512", sub.Limits.MaxProcesses)
+	}
+}
+
+func TestCreateRejectsRequestLimitsAboveMaxLimits(t *testing.T) {
+	service := NewService(ServiceConfig{
+		Repository: &fakeRepository{},
+		Queue:      &fakeQueue{},
+		Languages: fakeLanguages{
+			"python-3.12": {
+				Slug:    "python-3.12",
+				Enabled: true,
+			},
+		},
+		Limits:    defaultTestLimits(),
+		MaxLimits: defaultTestMaxLimits(),
+	})
+
+	_, err := service.Create(context.Background(), CreateRequest{
+		Language: "python-3.12",
+		Source:   "print('ok')",
+		Limits: &Limits{
+			MemoryKB: defaultTestMaxLimits().MemoryKB + 1,
+		},
+	})
+	if err == nil {
+		t.Fatal("Create returned nil error, want validation error")
+	}
+
+	validation, ok := err.(ValidationError)
+	if !ok {
+		t.Fatalf("err = %T, want ValidationError", err)
+	}
+	if validation.Field != "limits.memory_kb" {
+		t.Fatalf("field = %q, want limits.memory_kb", validation.Field)
 	}
 }
 
@@ -162,6 +200,20 @@ func defaultTestLimits() Limits {
 		MaxProcesses: 60,
 		MaxOutputKB:  1024,
 		MaxFileKB:    1024,
+		Runs:         1,
+	}
+}
+
+func defaultTestMaxLimits() Limits {
+	return Limits{
+		CPUTimeMS:    15000,
+		CPUExtraMS:   3000,
+		WallTimeMS:   30000,
+		MemoryKB:     2097152,
+		StackKB:      64000,
+		MaxProcesses: 256,
+		MaxOutputKB:  4096,
+		MaxFileKB:    10240,
 		Runs:         1,
 	}
 }

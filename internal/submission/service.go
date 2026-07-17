@@ -25,6 +25,7 @@ type ServiceConfig struct {
 	Queue      Queue
 	Languages  LanguageRegistry
 	Limits     Limits
+	MaxLimits  Limits
 }
 
 // Service coordinates submission validation, persistence, and queueing.
@@ -33,6 +34,7 @@ type Service struct {
 	queue     Queue
 	languages LanguageRegistry
 	limits    Limits
+	maxLimits Limits
 }
 
 // NewService creates a submission service from cfg.
@@ -42,6 +44,7 @@ func NewService(cfg ServiceConfig) *Service {
 		queue:     cfg.Queue,
 		languages: cfg.Languages,
 		limits:    cfg.Limits,
+		maxLimits: cfg.MaxLimits,
 	}
 }
 
@@ -71,6 +74,9 @@ func (s *Service) Create(ctx context.Context, req CreateRequest) (*Submission, e
 	now := time.Now().UTC()
 	limits := mergeLanguageLimits(s.limits, lang.DefaultLimits)
 	if req.Limits != nil {
+		if err := validateLimitOverrides(*req.Limits, s.maxLimits); err != nil {
+			return nil, err
+		}
 		limits = mergeLimits(limits, *req.Limits)
 	}
 
@@ -119,6 +125,59 @@ func (s *Service) Get(ctx context.Context, token string) (*Submission, error) {
 		return nil, ValidationError{Field: "token", Message: "token is required"}
 	}
 	return s.repo.FindByToken(ctx, token)
+}
+
+func validateLimitOverrides(limits, max Limits) error {
+	checkInt64 := func(field string, value, maximum int64) error {
+		if value < 0 {
+			return ValidationError{Field: field, Message: "cannot be negative"}
+		}
+		if value > 0 && maximum > 0 && value > maximum {
+			return ValidationError{Field: field, Message: fmt.Sprintf("cannot exceed %d", maximum)}
+		}
+		return nil
+	}
+	checkInt := func(field string, value, maximum int) error {
+		if value < 0 {
+			return ValidationError{Field: field, Message: "cannot be negative"}
+		}
+		if value > 0 && maximum > 0 && value > maximum {
+			return ValidationError{Field: field, Message: fmt.Sprintf("cannot exceed %d", maximum)}
+		}
+		return nil
+	}
+
+	if err := checkInt64("limits.cpu_time_ms", limits.CPUTimeMS, max.CPUTimeMS); err != nil {
+		return err
+	}
+	if err := checkInt64("limits.cpu_extra_time_ms", limits.CPUExtraMS, max.CPUExtraMS); err != nil {
+		return err
+	}
+	if err := checkInt64("limits.wall_time_ms", limits.WallTimeMS, max.WallTimeMS); err != nil {
+		return err
+	}
+	if err := checkInt64("limits.memory_kb", limits.MemoryKB, max.MemoryKB); err != nil {
+		return err
+	}
+	if err := checkInt64("limits.stack_kb", limits.StackKB, max.StackKB); err != nil {
+		return err
+	}
+	if err := checkInt("limits.max_processes", limits.MaxProcesses, max.MaxProcesses); err != nil {
+		return err
+	}
+	if err := checkInt64("limits.max_output_kb", limits.MaxOutputKB, max.MaxOutputKB); err != nil {
+		return err
+	}
+	if err := checkInt64("limits.max_file_kb", limits.MaxFileKB, max.MaxFileKB); err != nil {
+		return err
+	}
+	if err := checkInt("limits.runs", limits.Runs, max.Runs); err != nil {
+		return err
+	}
+	if limits.Network && !max.Network {
+		return ValidationError{Field: "limits.network", Message: "cannot be enabled"}
+	}
+	return nil
 }
 
 func mergeLanguageLimits(defaults Limits, overrides *language.LimitOverrides) Limits {

@@ -130,8 +130,12 @@ Important defaults:
 - `SANDBOX_ISOLATE_BOX_ID_COUNT=16`
 - `SANDBOX_ISOLATE_CGROUP=true`
 - `CALLBACK_TIMEOUT_MS=5000`
+- `MAX_LIMIT_CPU_TIME_MS=15000`
+- `MAX_LIMIT_WALL_TIME_MS=30000`
+- `MAX_LIMIT_MEMORY_KB=2097152`
+- `MAX_LIMIT_MAX_PROCESSES=256`
 
-The language catalog can set per-language default limits. `node-22` currently uses a larger memory and process profile than the global defaults because V8 reserves substantial virtual memory at startup under isolate.
+The language catalog can set per-language default limits. `node-22` currently uses a larger memory and process profile than the global defaults because V8 reserves substantial virtual memory at startup under isolate. Submission-provided limits may lower or raise the per-request limits, but they cannot exceed `MAX_LIMIT_*` configuration values.
 
 For Docker-backed local execution:
 

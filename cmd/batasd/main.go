@@ -114,6 +114,7 @@ func main() {
 		Queue:      queue,
 		Languages:  languages,
 		Limits:     cfg.Submissions.DefaultLimits,
+		MaxLimits:  cfg.Submissions.MaxLimits,
 	})
 
 	router := httpapi.NewRouter(httpapi.Dependencies{
