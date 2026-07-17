@@ -9,5 +9,5 @@
 - Add alternate sandbox drivers beyond the MVP direct, isolate, and Docker drivers, such as nsjail or gVisor.
 - Add object-storage support for large artifacts if database-backed output storage becomes too limiting.
 - Add configurable retention and cleanup jobs for completed submissions.
-- Add callback retry/backoff controls and delivery status APIs.
+- Add callback retry/backoff controls.
 - Add stricter callback allowlist management if proxy deployments need per-tenant callback policies.

@@ -127,6 +127,18 @@ func (s *Service) Get(ctx context.Context, token string) (*Submission, error) {
 	return s.repo.FindByToken(ctx, token)
 }
 
+// ListCallbackAttempts returns callback delivery attempts for token.
+func (s *Service) ListCallbackAttempts(ctx context.Context, token string) ([]CallbackAttempt, error) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return nil, ValidationError{Field: "token", Message: "token is required"}
+	}
+	if _, err := s.repo.FindByToken(ctx, token); err != nil {
+		return nil, err
+	}
+	return s.repo.ListCallbackAttempts(ctx, token)
+}
+
 func validateLimitOverrides(limits, max Limits) error {
 	checkInt64 := func(field string, value, maximum int64) error {
 		if value < 0 {

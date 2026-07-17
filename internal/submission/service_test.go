@@ -190,6 +190,37 @@ func TestCreateRejectsUnsupportedAdditionalFilesEncoding(t *testing.T) {
 	}
 }
 
+func TestListCallbackAttemptsRequiresExistingSubmission(t *testing.T) {
+	repo := &fakeRepository{
+		attempts: []CallbackAttempt{
+			{SubmissionToken: "sub_test", Attempt: 1},
+		},
+	}
+	service := NewService(ServiceConfig{
+		Repository: repo,
+		Queue:      &fakeQueue{},
+		Languages:  fakeLanguages{},
+		Limits:     defaultTestLimits(),
+	})
+
+	_, err := service.ListCallbackAttempts(context.Background(), "sub_missing")
+	if err == nil {
+		t.Fatal("ListCallbackAttempts returned nil error, want not found")
+	}
+	if err != ErrNotFound {
+		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+
+	_ = repo.Create(context.Background(), &Submission{Token: "sub_test"})
+	attempts, err := service.ListCallbackAttempts(context.Background(), "sub_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("len(attempts) = %d, want 1", len(attempts))
+	}
+}
+
 func defaultTestLimits() Limits {
 	return Limits{
 		CPUTimeMS:    5000,
@@ -238,7 +269,8 @@ func (q *fakeQueue) Enqueue(_ context.Context, token string) error {
 }
 
 type fakeRepository struct {
-	created *Submission
+	created  *Submission
+	attempts []CallbackAttempt
 }
 
 func (r *fakeRepository) Create(_ context.Context, sub *Submission) error {
@@ -259,4 +291,19 @@ func (r *fakeRepository) MarkProcessing(_ context.Context, _ string, _ time.Time
 
 func (r *fakeRepository) StoreResult(_ context.Context, _ string, _ Result) error {
 	return nil
+}
+
+func (r *fakeRepository) CreateCallbackAttempt(_ context.Context, attempt CallbackAttempt) error {
+	r.attempts = append(r.attempts, attempt)
+	return nil
+}
+
+func (r *fakeRepository) ListCallbackAttempts(_ context.Context, token string) ([]CallbackAttempt, error) {
+	var attempts []CallbackAttempt
+	for _, attempt := range r.attempts {
+		if attempt.SubmissionToken == token {
+			attempts = append(attempts, attempt)
+		}
+	}
+	return attempts, nil
 }

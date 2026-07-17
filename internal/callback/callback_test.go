@@ -116,10 +116,10 @@ func testSubmission(callbackURL string) *submission.Submission {
 }
 
 type fakeAttemptRepository struct {
-	attempts []Attempt
+	attempts []submission.CallbackAttempt
 }
 
-func (r *fakeAttemptRepository) CreateCallbackAttempt(_ context.Context, attempt Attempt) error {
+func (r *fakeAttemptRepository) CreateCallbackAttempt(_ context.Context, attempt submission.CallbackAttempt) error {
 	r.attempts = append(r.attempts, attempt)
 	return nil
 }

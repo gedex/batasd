@@ -92,12 +92,24 @@ type Result struct {
 	FinishedAt    time.Time
 }
 
+// CallbackAttempt is one delivery attempt for a submission callback.
+type CallbackAttempt struct {
+	ID              int64
+	SubmissionToken string
+	Attempt         int
+	StatusCode      *int
+	Error           *string
+	CreatedAt       time.Time
+}
+
 // Repository persists submissions and their status transitions.
 type Repository interface {
 	Create(ctx context.Context, submission *Submission) error
 	FindByToken(ctx context.Context, token string) (*Submission, error)
 	MarkProcessing(ctx context.Context, token string, startedAt time.Time) error
 	StoreResult(ctx context.Context, token string, result Result) error
+	CreateCallbackAttempt(ctx context.Context, attempt CallbackAttempt) error
+	ListCallbackAttempts(ctx context.Context, token string) ([]CallbackAttempt, error)
 }
 
 // Queue accepts submissions for asynchronous execution.

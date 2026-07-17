@@ -81,6 +81,7 @@ func NewRouter(deps Dependencies) http.Handler {
 
 		submissionHandler := SubmissionHandler{Service: deps.Submissions}
 		r.Post("/submissions", submissionHandler.Create)
+		r.Get("/submissions/{token}/callbacks", submissionHandler.CallbackAttempts)
 		r.Get("/submissions/{token}", submissionHandler.Get)
 	})
 

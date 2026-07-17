@@ -16,18 +16,9 @@ import (
 
 const defaultTimeout = 5 * time.Second
 
-// Attempt describes one callback delivery attempt.
-type Attempt struct {
-	SubmissionToken string
-	Attempt         int
-	StatusCode      *int
-	Error           *string
-	CreatedAt       time.Time
-}
-
 // AttemptRepository records callback delivery attempts.
 type AttemptRepository interface {
-	CreateCallbackAttempt(ctx context.Context, attempt Attempt) error
+	CreateCallbackAttempt(ctx context.Context, attempt submission.CallbackAttempt) error
 }
 
 // Deliverer sends completion callbacks and records their outcomes.
@@ -61,7 +52,7 @@ func (d *Deliverer) Deliver(ctx context.Context, sub *submission.Submission, res
 		return nil
 	}
 
-	attempt := Attempt{
+	attempt := submission.CallbackAttempt{
 		SubmissionToken: sub.Token,
 		Attempt:         1,
 		CreatedAt:       time.Now().UTC(),
@@ -77,7 +68,7 @@ func (d *Deliverer) Deliver(ctx context.Context, sub *submission.Submission, res
 	return err
 }
 
-func (d *Deliverer) post(ctx context.Context, callbackURL string, sub *submission.Submission, result submission.Result, attempt *Attempt) error {
+func (d *Deliverer) post(ctx context.Context, callbackURL string, sub *submission.Submission, result submission.Result, attempt *submission.CallbackAttempt) error {
 	body, err := json.Marshal(submission.ToResultResponse(sub, result))
 	if err != nil {
 		return d.markError(attempt, fmt.Errorf("encode callback payload: %w", err))
@@ -104,13 +95,13 @@ func (d *Deliverer) post(ctx context.Context, callbackURL string, sub *submissio
 	return nil
 }
 
-func (d *Deliverer) markError(attempt *Attempt, err error) error {
+func (d *Deliverer) markError(attempt *submission.CallbackAttempt, err error) error {
 	message := err.Error()
 	attempt.Error = &message
 	return err
 }
 
-func (d *Deliverer) record(ctx context.Context, attempt Attempt) error {
+func (d *Deliverer) record(ctx context.Context, attempt submission.CallbackAttempt) error {
 	if d.repo == nil {
 		return nil
 	}

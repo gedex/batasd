@@ -82,6 +82,13 @@ curl -X POST http://localhost:18080/v1/submissions \
 
 The callback receiver gets a `POST` with the same JSON shape returned by `GET /v1/submissions/{token}` after execution finishes. Delivery is attempted once in the MVP and recorded in `callback_attempts`.
 
+Fetch callback attempts for a submission:
+
+```bash
+curl -H 'Authorization: Bearer dev-token' \
+  http://localhost:18080/v1/submissions/sub_xxxxx/callbacks
+```
+
 Submit a source file with language detection:
 
 ```bash

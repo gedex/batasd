@@ -29,6 +29,21 @@ type Response struct {
 	CompilerOptions []string      `json:"compiler_options,omitempty"`
 }
 
+// CallbackAttemptResponse is the public representation of a callback attempt.
+type CallbackAttemptResponse struct {
+	ID         int64   `json:"id"`
+	Attempt    int     `json:"attempt"`
+	StatusCode *int    `json:"status_code"`
+	Error      *string `json:"error"`
+	CreatedAt  string  `json:"created_at"`
+}
+
+// CallbackAttemptsResponse is the public response for callback attempts.
+type CallbackAttemptsResponse struct {
+	SubmissionToken string                    `json:"submission_token"`
+	Attempts        []CallbackAttemptResponse `json:"attempts"`
+}
+
 // ToResponse converts sub into its public API shape.
 func ToResponse(sub *Submission) Response {
 	return Response{
@@ -51,6 +66,24 @@ func ToResponse(sub *Submission) Response {
 		Limits:          sub.Limits,
 		Arguments:       sub.Arguments,
 		CompilerOptions: sub.CompilerOptions,
+	}
+}
+
+// ToCallbackAttemptsResponse converts attempts into the public API shape.
+func ToCallbackAttemptsResponse(token string, attempts []CallbackAttempt) CallbackAttemptsResponse {
+	responses := make([]CallbackAttemptResponse, 0, len(attempts))
+	for _, attempt := range attempts {
+		responses = append(responses, CallbackAttemptResponse{
+			ID:         attempt.ID,
+			Attempt:    attempt.Attempt,
+			StatusCode: attempt.StatusCode,
+			Error:      attempt.Error,
+			CreatedAt:  attempt.CreatedAt.Format(time.RFC3339Nano),
+		})
+	}
+	return CallbackAttemptsResponse{
+		SubmissionToken: token,
+		Attempts:        responses,
 	}
 }
 

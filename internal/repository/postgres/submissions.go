@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/gedex/batasd/internal/callback"
 	"github.com/gedex/batasd/internal/submission"
 )
 
@@ -254,7 +253,7 @@ func (r *SubmissionRepository) StoreResult(ctx context.Context, token string, re
 }
 
 // CreateCallbackAttempt inserts one callback delivery attempt row.
-func (r *SubmissionRepository) CreateCallbackAttempt(ctx context.Context, attempt callback.Attempt) error {
+func (r *SubmissionRepository) CreateCallbackAttempt(ctx context.Context, attempt submission.CallbackAttempt) error {
 	if attempt.CreatedAt.IsZero() {
 		attempt.CreatedAt = time.Now().UTC()
 	}
@@ -273,6 +272,45 @@ func (r *SubmissionRepository) CreateCallbackAttempt(ctx context.Context, attemp
 		attempt.CreatedAt,
 	)
 	return err
+}
+
+// ListCallbackAttempts returns callback attempts for token in attempt order.
+func (r *SubmissionRepository) ListCallbackAttempts(ctx context.Context, token string) ([]submission.CallbackAttempt, error) {
+	rows, err := r.db.Query(ctx, `SELECT
+		id,
+		submission_token,
+		attempt,
+		status_code,
+		error,
+		created_at
+	FROM callback_attempts
+	WHERE submission_token = $1
+	ORDER BY attempt ASC, id ASC`, token)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var attempts []submission.CallbackAttempt
+	for rows.Next() {
+		var attempt submission.CallbackAttempt
+		var statusCode pgtype.Int4
+		var attemptError pgtype.Text
+		if err := rows.Scan(
+			&attempt.ID,
+			&attempt.SubmissionToken,
+			&attempt.Attempt,
+			&statusCode,
+			&attemptError,
+			&attempt.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		attempt.StatusCode = intPtr(statusCode)
+		attempt.Error = textPtr(attemptError)
+		attempts = append(attempts, attempt)
+	}
+	return attempts, rows.Err()
 }
 
 func textPtr(value pgtype.Text) *string {

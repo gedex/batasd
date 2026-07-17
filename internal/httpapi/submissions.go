@@ -56,3 +56,24 @@ func (h SubmissionHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, submission.ToResponse(sub))
 }
+
+// CallbackAttempts handles callback attempt fetch requests.
+func (h SubmissionHandler) CallbackAttempts(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+	attempts, err := h.Service.ListCallbackAttempts(r.Context(), token)
+	if errors.Is(err, submission.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "not_found", "submission not found")
+		return
+	}
+	if err != nil {
+		var validation submission.ValidationError
+		if errors.As(err, &validation) {
+			writeError(w, http.StatusUnprocessableEntity, "validation_failed", validation.Error())
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "could not fetch callback attempts")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, submission.ToCallbackAttemptsResponse(token, attempts))
+}
