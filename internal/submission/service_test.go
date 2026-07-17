@@ -118,6 +118,40 @@ func TestCreateUsesGlobalLimitsWhenLanguageHasNoDefaultLimits(t *testing.T) {
 	}
 }
 
+func TestCreateRejectsUnsupportedAdditionalFilesEncoding(t *testing.T) {
+	service := NewService(ServiceConfig{
+		Repository: &fakeRepository{},
+		Queue:      &fakeQueue{},
+		Languages: fakeLanguages{
+			"python-3.12": {
+				Slug:    "python-3.12",
+				Enabled: true,
+			},
+		},
+		Limits: defaultTestLimits(),
+	})
+
+	_, err := service.Create(context.Background(), CreateRequest{
+		Language: "python-3.12",
+		Source:   "print('ok')",
+		AdditionalFiles: &AdditionalFiles{
+			Encoding: "plain",
+			Content:  "hello",
+		},
+	})
+	if err == nil {
+		t.Fatal("Create returned nil error, want validation error")
+	}
+
+	validation, ok := err.(ValidationError)
+	if !ok {
+		t.Fatalf("err = %T, want ValidationError", err)
+	}
+	if validation.Field != "additional_files.encoding" {
+		t.Fatalf("field = %q, want additional_files.encoding", validation.Field)
+	}
+}
+
 func defaultTestLimits() Limits {
 	return Limits{
 		CPUTimeMS:    5000,

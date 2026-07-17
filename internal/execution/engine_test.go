@@ -1,7 +1,12 @@
 package execution
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"encoding/base64"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/gedex/batasd/internal/language"
@@ -81,6 +86,130 @@ func TestEngineRunMapsRuntimeError(t *testing.T) {
 	}
 }
 
+func TestEngineRunExtractsAdditionalFiles(t *testing.T) {
+	exitCode := 0
+	var inspected bool
+	engine := NewEngine(fakeRegistry{
+		"python-3.12": {
+			Slug:       "python-3.12",
+			SourceFile: "main.py",
+			Run:        []string{"python3", "main.py"},
+			Enabled:    true,
+		},
+	}, fakeRunner{
+		run: func(command sandbox.Command) sandbox.Result {
+			got, err := os.ReadFile(filepath.Join(command.Dir, "lib", "helper.txt"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(got) != "hello from helper" {
+				t.Fatalf("helper.txt = %q, want helper content", got)
+			}
+			inspected = true
+			return sandbox.Result{
+				Stdout:   "hello\n",
+				ExitCode: &exitCode,
+			}
+		},
+	}, t.TempDir())
+
+	expected := "hello"
+	result := engine.Run(context.Background(), &submission.Submission{
+		Token:          "sub_test",
+		Language:       "python-3.12",
+		Source:         "print('hello')",
+		ExpectedOutput: &expected,
+		AdditionalFiles: &submission.AdditionalFiles{
+			Encoding: "zip_base64",
+			Content:  zipBase64(t, map[string]string{"lib/helper.txt": "hello from helper"}),
+		},
+		Limits: submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1024},
+	})
+
+	if result.StatusCode != status.Accepted {
+		t.Fatalf("expected accepted, got %s: %v", result.StatusCode, result.Message)
+	}
+	if !inspected {
+		t.Fatal("runner did not inspect extracted files")
+	}
+}
+
+func TestEngineRunRejectsAdditionalFilesPathTraversal(t *testing.T) {
+	workDir := t.TempDir()
+	engine := NewEngine(fakeRegistry{
+		"python-3.12": {
+			Slug:       "python-3.12",
+			SourceFile: "main.py",
+			Run:        []string{"python3", "main.py"},
+			Enabled:    true,
+		},
+	}, fakeRunner{}, workDir)
+
+	result := engine.Run(context.Background(), &submission.Submission{
+		Token:    "sub_test",
+		Language: "python-3.12",
+		Source:   "print('hello')",
+		AdditionalFiles: &submission.AdditionalFiles{
+			Encoding: "zip_base64",
+			Content:  zipBase64(t, map[string]string{"../escape.txt": "bad"}),
+		},
+		Limits: submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1024},
+	})
+
+	if result.StatusCode != status.SandboxError {
+		t.Fatalf("expected sandbox error, got %s", result.StatusCode)
+	}
+	if _, err := os.Stat(filepath.Join(workDir, "escape.txt")); !os.IsNotExist(err) {
+		t.Fatalf("escape file stat error = %v, want not exist", err)
+	}
+}
+
+func TestEngineRunRejectsAdditionalFilesSourceOverwrite(t *testing.T) {
+	engine := NewEngine(fakeRegistry{
+		"python-3.12": {
+			Slug:       "python-3.12",
+			SourceFile: "main.py",
+			Run:        []string{"python3", "main.py"},
+			Enabled:    true,
+		},
+	}, fakeRunner{}, t.TempDir())
+
+	result := engine.Run(context.Background(), &submission.Submission{
+		Token:    "sub_test",
+		Language: "python-3.12",
+		Source:   "print('hello')",
+		AdditionalFiles: &submission.AdditionalFiles{
+			Encoding: "zip_base64",
+			Content:  zipBase64(t, map[string]string{"main.py": "print('overwrite')"}),
+		},
+		Limits: submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1024},
+	})
+
+	if result.StatusCode != status.SandboxError {
+		t.Fatalf("expected sandbox error, got %s", result.StatusCode)
+	}
+}
+
+func zipBase64(t *testing.T, files map[string]string) string {
+	t.Helper()
+
+	var buf bytes.Buffer
+	archive := zip.NewWriter(&buf)
+	for name, content := range files {
+		writer, err := archive.Create(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := writer.Write([]byte(content)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := archive.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return base64.StdEncoding.EncodeToString(buf.Bytes())
+}
+
 type fakeRegistry map[string]language.Language
 
 func (r fakeRegistry) Get(slug string) (language.Language, bool) {
@@ -90,8 +219,12 @@ func (r fakeRegistry) Get(slug string) (language.Language, bool) {
 
 type fakeRunner struct {
 	result sandbox.Result
+	run    func(sandbox.Command) sandbox.Result
 }
 
-func (r fakeRunner) Run(context.Context, sandbox.Command) sandbox.Result {
+func (r fakeRunner) Run(_ context.Context, command sandbox.Command) sandbox.Result {
+	if r.run != nil {
+		return r.run(command)
+	}
 	return r.result
 }

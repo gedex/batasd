@@ -15,6 +15,7 @@ Options:
   --input-file PATH           Read stdin string from file.
   --expected-output VALUE     Expected stdout string.
   --expected-output-file PATH Read expected stdout string from file.
+  --additional-files-zip PATH Attach a zip archive as additional_files.
   --callback-url URL          Callback URL to POST the completed result to.
   --wait                      Poll until the submission leaves queued/processing.
   --interval SECONDS          Poll interval for --wait. Default: 1
@@ -29,6 +30,7 @@ Environment:
 Examples:
   scripts/submit.sh ./main.py
   scripts/submit.sh --url http://localhost:18082 ./main.js
+  scripts/submit.sh --additional-files-zip ./fixtures.zip ./main.py
   scripts/submit.sh --callback-url http://127.0.0.1:9000/callback ./main.py
   scripts/submit.sh --wait --expected-output "hello" ./main.py
 USAGE
@@ -133,6 +135,7 @@ input_file=""
 expected_output=""
 expected_output_file=""
 expected_output_set=false
+additional_files_zip=""
 callback_url="${BATASD_CALLBACK_URL:-}"
 wait=false
 interval="${BATASD_POLL_INTERVAL:-1}"
@@ -183,6 +186,13 @@ while [[ $# -gt 0 ]]; do
       expected_output_file="$2"
       expected_output=""
       expected_output_set=true
+      shift 2
+      ;;
+    --additional-files-zip)
+      [[ $# -ge 2 ]] || die "--additional-files-zip requires a value"
+      [[ -f "$2" ]] || die "additional files zip not found: $2"
+      [[ -r "$2" ]] || die "additional files zip is not readable: $2"
+      additional_files_zip="$2"
       shift 2
       ;;
     --callback-url)
@@ -249,7 +259,9 @@ BATASD_SUBMIT_INPUT="$input" BATASD_SUBMIT_EXPECTED_OUTPUT="$expected_output" BA
   "$language" \
   "$input_file" \
   "$expected_output_set" \
-  "$expected_output_file" >"$payload_path" <<'PY'
+  "$expected_output_file" \
+  "$additional_files_zip" >"$payload_path" <<'PY'
+import base64
 import json
 import os
 import pathlib
@@ -260,6 +272,7 @@ language = sys.argv[2]
 input_file = sys.argv[3]
 expected_output_set = sys.argv[4] == "true"
 expected_output_file = sys.argv[5]
+additional_files_zip = sys.argv[6]
 
 stdin = os.environ.get("BATASD_SUBMIT_INPUT", "")
 if input_file:
@@ -276,6 +289,12 @@ if expected_output_set:
     if expected_output_file:
         expected_output = pathlib.Path(expected_output_file).read_text()
     payload["expected_output"] = expected_output
+
+if additional_files_zip:
+    payload["additional_files"] = {
+        "encoding": "zip_base64",
+        "content": base64.b64encode(pathlib.Path(additional_files_zip).read_bytes()).decode("ascii"),
+    }
 
 callback_url = os.environ.get("BATASD_SUBMIT_CALLBACK_URL", "")
 if callback_url:

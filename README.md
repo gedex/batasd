@@ -14,6 +14,7 @@ This project is in early development. The current implementation includes:
 - In-memory queue for local development.
 - Direct local execution worker for development.
 - Initial submission create and fetch endpoints.
+- Base64 zip `additional_files` extraction.
 - Completion callbacks with attempt logging.
 
 Sandbox drivers are being built incrementally. The current implementation supports the `direct` and Docker development drivers, plus an initial Linux `isolate` driver for production-style execution.
@@ -86,10 +87,22 @@ Submit a source file with language detection:
 ```bash
 scripts/submit.sh ./main.py
 scripts/submit.sh --url http://localhost:18082 --wait ./main.js
+scripts/submit.sh --additional-files-zip ./fixtures.zip ./main.py
 scripts/submit.sh --callback-url http://127.0.0.1:9000/callback --wait ./main.py
 ```
 
 The helper defaults to `http://localhost:18080/v1/submissions` and `Authorization: Bearer dev-token`. Override those with `--url`, `BATASD_SUBMISSIONS_URL`, `--token`, or `BATASD_TOKEN`. Add callbacks with `--callback-url` or `BATASD_CALLBACK_URL`.
+
+Attach supporting files with:
+
+```json
+"additional_files": {
+  "encoding": "zip_base64",
+  "content": "<base64-encoded zip archive>"
+}
+```
+
+Archive paths are extracted into the execution directory. Absolute paths, `..`, backslashes, symlinks, duplicate paths, and source-file overwrites are rejected.
 
 Run tests:
 

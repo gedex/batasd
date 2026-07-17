@@ -2,9 +2,14 @@
 package execution
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -15,6 +20,12 @@ import (
 	"github.com/gedex/batasd/internal/sandbox"
 	"github.com/gedex/batasd/internal/status"
 	"github.com/gedex/batasd/internal/submission"
+)
+
+const (
+	maxAdditionalFilesArchiveBytes   = 10 * 1024 * 1024
+	maxAdditionalFilesExtractedBytes = 20 * 1024 * 1024
+	maxAdditionalFilesEntries        = 256
 )
 
 // LanguageRegistry resolves enabled languages by slug.
@@ -53,9 +64,6 @@ func (e *Engine) Run(ctx context.Context, sub *submission.Submission) submission
 	if err := validateTokens("compiler_options", sub.CompilerOptions); err != nil {
 		return result(status.InternalError, finishedAt, withMessage(err.Error()))
 	}
-	if sub.AdditionalFiles != nil {
-		return result(status.InternalError, finishedAt, withMessage("additional_files are not supported yet"))
-	}
 
 	if err := os.MkdirAll(e.workDir, 0o700); err != nil {
 		return result(status.SandboxError, finishedAt, withMessage(err.Error()))
@@ -73,6 +81,11 @@ func (e *Engine) Run(ctx context.Context, sub *submission.Submission) submission
 	sourcePath := filepath.Join(dir, lang.SourceFile)
 	if err := os.WriteFile(sourcePath, []byte(sub.Source), 0o644); err != nil {
 		return result(status.SandboxError, finishedAt, withMessage(err.Error()))
+	}
+	if sub.AdditionalFiles != nil {
+		if err := extractAdditionalFiles(dir, sub.AdditionalFiles); err != nil {
+			return result(status.SandboxError, finishedAt, withMessage(err.Error()))
+		}
 	}
 
 	if len(lang.Compile) > 0 {
@@ -118,6 +131,142 @@ func (e *Engine) Run(ctx context.Context, sub *submission.Submission) submission
 	}
 
 	return fromSandbox(status.Accepted, run, nil, "")
+}
+
+func extractAdditionalFiles(dir string, files *submission.AdditionalFiles) error {
+	if files == nil {
+		return nil
+	}
+	if files.Encoding != "zip_base64" {
+		return fmt.Errorf("unsupported additional_files encoding %q", files.Encoding)
+	}
+
+	archive, err := decodeAdditionalFilesArchive(files.Content)
+	if err != nil {
+		return err
+	}
+
+	reader, err := zip.NewReader(bytes.NewReader(archive), int64(len(archive)))
+	if err != nil {
+		return fmt.Errorf("read additional_files zip: %w", err)
+	}
+	if len(reader.File) > maxAdditionalFilesEntries {
+		return fmt.Errorf("additional_files cannot contain more than %d entries", maxAdditionalFilesEntries)
+	}
+
+	root, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+
+	seen := map[string]struct{}{}
+	var extractedBytes int64
+	for _, file := range reader.File {
+		target, cleanName, err := safeZipTarget(root, file.Name)
+		if err != nil {
+			return err
+		}
+		if _, ok := seen[cleanName]; ok {
+			return fmt.Errorf("additional_files contains duplicate path %q", cleanName)
+		}
+		seen[cleanName] = struct{}{}
+
+		mode := file.FileInfo().Mode()
+		if mode&os.ModeSymlink != 0 {
+			return fmt.Errorf("additional_files path %q cannot be a symlink", cleanName)
+		}
+		if file.FileInfo().IsDir() {
+			if err := os.MkdirAll(target, 0o755); err != nil {
+				return err
+			}
+			continue
+		}
+		if !mode.IsRegular() {
+			return fmt.Errorf("additional_files path %q must be a regular file", cleanName)
+		}
+
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return err
+		}
+		remaining := maxAdditionalFilesExtractedBytes - extractedBytes
+		if remaining <= 0 {
+			return fmt.Errorf("additional_files extracted content exceeds %d bytes", maxAdditionalFilesExtractedBytes)
+		}
+		n, err := extractZipFile(file, target, remaining)
+		if err != nil {
+			return err
+		}
+		extractedBytes += n
+	}
+
+	return nil
+}
+
+func decodeAdditionalFilesArchive(content string) ([]byte, error) {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return nil, fmt.Errorf("additional_files content is required")
+	}
+	if len(content) > base64.StdEncoding.EncodedLen(maxAdditionalFilesArchiveBytes) {
+		return nil, fmt.Errorf("additional_files archive exceeds %d bytes", maxAdditionalFilesArchiveBytes)
+	}
+
+	archive, err := base64.StdEncoding.DecodeString(content)
+	if err != nil {
+		return nil, fmt.Errorf("decode additional_files content: %w", err)
+	}
+	if len(archive) > maxAdditionalFilesArchiveBytes {
+		return nil, fmt.Errorf("additional_files archive exceeds %d bytes", maxAdditionalFilesArchiveBytes)
+	}
+	return archive, nil
+}
+
+func safeZipTarget(root, name string) (string, string, error) {
+	if name == "" {
+		return "", "", fmt.Errorf("additional_files contains an empty path")
+	}
+	if strings.Contains(name, "\\") {
+		return "", "", fmt.Errorf("additional_files path %q cannot contain backslashes", name)
+	}
+
+	clean := path.Clean(name)
+	if clean == "." || clean == ".." || path.IsAbs(clean) || strings.HasPrefix(clean, "../") {
+		return "", "", fmt.Errorf("additional_files path %q is not allowed", name)
+	}
+
+	target := filepath.Join(root, filepath.FromSlash(clean))
+	absTarget, err := filepath.Abs(target)
+	if err != nil {
+		return "", "", err
+	}
+	if absTarget != root && !strings.HasPrefix(absTarget, root+string(os.PathSeparator)) {
+		return "", "", fmt.Errorf("additional_files path %q escapes the execution directory", name)
+	}
+	return absTarget, clean, nil
+}
+
+func extractZipFile(file *zip.File, target string, remaining int64) (int64, error) {
+	source, err := file.Open()
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	destination, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return 0, err
+	}
+	defer destination.Close()
+
+	limited := &io.LimitedReader{R: source, N: remaining + 1}
+	written, err := io.Copy(destination, limited)
+	if err != nil {
+		return written, err
+	}
+	if written > remaining {
+		return written, fmt.Errorf("additional_files extracted content exceeds %d bytes", maxAdditionalFilesExtractedBytes)
+	}
+	return written, nil
 }
 
 func appendArgs(base []string, extra []string) []string {

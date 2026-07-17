@@ -59,6 +59,14 @@ func (s *Service) Create(ctx context.Context, req CreateRequest) (*Submission, e
 			return nil, ValidationError{Field: "callback.url", Message: err.Error()}
 		}
 	}
+	if req.AdditionalFiles != nil {
+		if strings.TrimSpace(req.AdditionalFiles.Encoding) != "zip_base64" {
+			return nil, ValidationError{Field: "additional_files.encoding", Message: "must be zip_base64"}
+		}
+		if strings.TrimSpace(req.AdditionalFiles.Content) == "" {
+			return nil, ValidationError{Field: "additional_files.content", Message: "content is required"}
+		}
+	}
 
 	now := time.Now().UTC()
 	limits := mergeLanguageLimits(s.limits, lang.DefaultLimits)
