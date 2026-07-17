@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/gedex/batasd/internal/sandbox"
 	"github.com/gedex/batasd/internal/sandbox/direct"
 	dockersandbox "github.com/gedex/batasd/internal/sandbox/docker"
+	isolatesandbox "github.com/gedex/batasd/internal/sandbox/isolate"
 	"github.com/gedex/batasd/internal/submission"
 	"github.com/gedex/batasd/internal/worker"
 )
@@ -35,8 +37,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(signals)
+
+	go func() {
+		sig := <-signals
+		logger.Info("shutdown signal received", "signal", sig.String())
+		cancel()
+	}()
 
 	db, err := pgxpool.New(ctx, cfg.Database.URL)
 	if err != nil {
@@ -72,6 +84,13 @@ func main() {
 		runner = direct.NewRunner()
 	case "docker":
 		runner = dockersandbox.NewRunner(cfg.Sandbox.DockerBinary, cfg.Sandbox.DockerImage)
+	case "isolate":
+		runner = isolatesandbox.NewRunner(
+			cfg.Sandbox.IsolateBinary,
+			cfg.Sandbox.IsolateBoxIDStart,
+			cfg.Sandbox.IsolateBoxIDCount,
+			cfg.Sandbox.IsolateControlGroup,
+		)
 	default:
 		logger.Error("unsupported sandbox driver", "driver", cfg.Sandbox.Driver)
 		os.Exit(1)
@@ -79,8 +98,13 @@ func main() {
 
 	executionEngine := execution.NewEngine(languages, runner, cfg.Sandbox.WorkDir)
 	workerRunner := worker.New(logger, queue, submissionRepo, executionEngine)
+	var workerWG sync.WaitGroup
 	for i := 1; i <= cfg.Queue.Workers; i++ {
-		go workerRunner.Run(ctx, i)
+		workerWG.Add(1)
+		go func(id int) {
+			defer workerWG.Done()
+			workerRunner.Run(ctx, id)
+		}(i)
 	}
 
 	submissionService := submission.NewService(submission.ServiceConfig{
@@ -108,17 +132,37 @@ func main() {
 		logger.Info("starting server", "addr", cfg.HTTP.Addr, "env", cfg.AppEnv, "sandbox", cfg.Sandbox.Driver)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("serve http", "error", err)
-			stop()
+			cancel()
 		}
 	}()
 
 	<-ctx.Done()
+	logger.Info("shutdown started")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
 
+	logger.Info("stopping server")
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("shutdown server", "error", err)
 		os.Exit(1)
 	}
+	logger.Info("server stopped")
+
+	logger.Info("waiting for workers", "workers", cfg.Queue.Workers)
+	workersStopped := make(chan struct{})
+	go func() {
+		workerWG.Wait()
+		close(workersStopped)
+	}()
+
+	select {
+	case <-workersStopped:
+		logger.Info("workers stopped")
+	case <-shutdownCtx.Done():
+		logger.Error("wait for workers", "error", shutdownCtx.Err())
+		os.Exit(1)
+	}
+
+	logger.Info("shutdown complete")
 }

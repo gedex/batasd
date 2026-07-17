@@ -40,10 +40,14 @@ type AuthConfig struct {
 
 // SandboxConfig selects the execution sandbox and its working directory.
 type SandboxConfig struct {
-	Driver       string
-	WorkDir      string
-	DockerImage  string
-	DockerBinary string
+	Driver              string
+	WorkDir             string
+	DockerImage         string
+	DockerBinary        string
+	IsolateBinary       string
+	IsolateBoxIDStart   int
+	IsolateBoxIDCount   int
+	IsolateControlGroup bool
 }
 
 // QueueConfig controls worker concurrency.
@@ -71,10 +75,14 @@ func Load() (Config, error) {
 			Tokens: envTokenSet("AUTHN_TOKENS", "dev-token"),
 		},
 		Sandbox: SandboxConfig{
-			Driver:       envString("SANDBOX_DRIVER", "direct"),
-			WorkDir:      envString("SANDBOX_WORK_DIR", os.TempDir()+"/batasd-work"),
-			DockerImage:  envString("SANDBOX_DOCKER_IMAGE", "batasd-runner:local"),
-			DockerBinary: envString("SANDBOX_DOCKER_BINARY", "docker"),
+			Driver:              envString("SANDBOX_DRIVER", "direct"),
+			WorkDir:             envString("SANDBOX_WORK_DIR", os.TempDir()+"/batasd-work"),
+			DockerImage:         envString("SANDBOX_DOCKER_IMAGE", "batasd-runner:local"),
+			DockerBinary:        envString("SANDBOX_DOCKER_BINARY", "docker"),
+			IsolateBinary:       envString("SANDBOX_ISOLATE_BINARY", "isolate"),
+			IsolateBoxIDStart:   envInt("SANDBOX_ISOLATE_BOX_ID_START", 0),
+			IsolateBoxIDCount:   envInt("SANDBOX_ISOLATE_BOX_ID_COUNT", 16),
+			IsolateControlGroup: envBool("SANDBOX_ISOLATE_CGROUP", true),
 		},
 		Queue: QueueConfig{
 			Workers: envInt("QUEUE_WORKERS", 1),
@@ -118,8 +126,21 @@ func (c Config) Validate() error {
 		return errors.New("production requires SANDBOX_DRIVER=isolate")
 	}
 
+	if c.Sandbox.Driver == "isolate" {
+		if c.Sandbox.IsolateBoxIDStart < 0 {
+			return errors.New("SANDBOX_ISOLATE_BOX_ID_START cannot be negative")
+		}
+		if c.Sandbox.IsolateBoxIDCount < 1 {
+			return errors.New("SANDBOX_ISOLATE_BOX_ID_COUNT must be at least 1")
+		}
+	}
+
 	if c.Queue.Workers < 1 {
 		return errors.New("QUEUE_WORKERS must be at least 1")
+	}
+
+	if c.Sandbox.Driver == "isolate" && c.Sandbox.IsolateBoxIDCount < c.Queue.Workers {
+		return errors.New("SANDBOX_ISOLATE_BOX_ID_COUNT must be greater than or equal to QUEUE_WORKERS")
 	}
 
 	return nil

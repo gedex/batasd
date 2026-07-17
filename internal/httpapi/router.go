@@ -91,8 +91,9 @@ func publicConfig(cfg config.Config) map[string]any {
 	return map[string]any{
 		"environment": cfg.AppEnv,
 		"sandbox": map[string]any{
-			"driver":       cfg.Sandbox.Driver,
-			"docker_image": cfg.Sandbox.DockerImage,
+			"driver":         cfg.Sandbox.Driver,
+			"docker_image":   cfg.Sandbox.DockerImage,
+			"isolate_cgroup": cfg.Sandbox.IsolateControlGroup,
 		},
 		"submissions": map[string]any{
 			"default_limits": cfg.Submissions.DefaultLimits,

@@ -15,7 +15,7 @@ This project is in early development. The current implementation includes:
 - Direct local execution worker for development.
 - Initial submission create and fetch endpoints.
 
-Sandbox drivers are being built incrementally. The current implementation supports the `direct` and Docker development drivers. Production is intended to use `isolate`.
+Sandbox drivers are being built incrementally. The current implementation supports the `direct` and Docker development drivers, plus an initial Linux `isolate` driver for production-style execution.
 
 ## Requirements
 
@@ -86,11 +86,21 @@ Important defaults:
 - `AUTHN_TOKENS=dev-token`
 - `SANDBOX_DRIVER=direct`
 - `SANDBOX_DOCKER_IMAGE=batasd-runner:local`
+- `SANDBOX_ISOLATE_BINARY=isolate`
+- `SANDBOX_ISOLATE_BOX_ID_START=0`
+- `SANDBOX_ISOLATE_BOX_ID_COUNT=16`
+- `SANDBOX_ISOLATE_CGROUP=true`
 
 For Docker-backed local execution:
 
 ```bash
 env SANDBOX_DRIVER=docker GOCACHE=/private/tmp/codeexec-go-cache GOMODCACHE=/private/tmp/codeexec-go-mod go run ./cmd/batasd
+```
+
+For isolate-backed Linux execution:
+
+```bash
+env SANDBOX_DRIVER=isolate GOCACHE=/tmp/batasd-go-cache GOMODCACHE=/tmp/batasd-go-mod go run ./cmd/batasd
 ```
 
 ## License
