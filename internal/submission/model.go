@@ -48,6 +48,21 @@ type CreateRequest struct {
 	Callback        *Callback        `json:"callback"`
 }
 
+// ListQuery filters and pages submissions in newest-first order.
+type ListQuery struct {
+	Limit       int
+	BeforeToken string
+	StatusCode  string
+	Language    string
+}
+
+// ListResult is one page of submissions.
+type ListResult struct {
+	Submissions []*Submission
+	NextBefore  *string
+	Limit       int
+}
+
 // Submission is a persisted code execution request and its current result state.
 type Submission struct {
 	Token                  string
@@ -112,6 +127,7 @@ type CallbackAttempt struct {
 type Repository interface {
 	Create(ctx context.Context, submission *Submission) error
 	FindByToken(ctx context.Context, token string) (*Submission, error)
+	List(ctx context.Context, query ListQuery) (ListResult, error)
 	MarkProcessing(ctx context.Context, token string, startedAt time.Time) error
 	StoreResult(ctx context.Context, token string, result Result) error
 	RecoverUnfinished(ctx context.Context, recoveredAt time.Time) ([]string, error)

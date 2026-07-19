@@ -20,6 +20,40 @@ type SubmissionRepository struct {
 	db *pgxpool.Pool
 }
 
+const submissionColumns = `
+	token,
+	language_slug,
+	source,
+	input,
+	expected_output,
+	arguments,
+	compiler_options,
+	limits,
+	additional_files,
+	callback_url,
+	status_code,
+	stdout,
+	stderr,
+	stdout_truncated,
+	stderr_truncated,
+	compile_output,
+	compile_output_truncated,
+	message,
+	exit_code,
+	exit_signal,
+	time_ms,
+	wall_time_ms,
+	memory_kb,
+	created_at,
+	queued_at,
+	started_at,
+	finished_at,
+	updated_at`
+
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+
 // NewSubmissionRepository creates a submission repository backed by db.
 func NewSubmissionRepository(db *pgxpool.Pool) *SubmissionRepository {
 	return &SubmissionRepository{db: db}
@@ -82,37 +116,63 @@ func (r *SubmissionRepository) Create(ctx context.Context, sub *submission.Submi
 
 // FindByToken returns the submission identified by token.
 func (r *SubmissionRepository) FindByToken(ctx context.Context, token string) (*submission.Submission, error) {
-	row := r.db.QueryRow(ctx, `SELECT
-		token,
-		language_slug,
-		source,
-		input,
-		expected_output,
-		arguments,
-		compiler_options,
-		limits,
-		additional_files,
-		callback_url,
-		status_code,
-		stdout,
-		stderr,
-		stdout_truncated,
-		stderr_truncated,
-		compile_output,
-		compile_output_truncated,
-		message,
-		exit_code,
-		exit_signal,
-		time_ms,
-		wall_time_ms,
-		memory_kb,
-		created_at,
-		queued_at,
-		started_at,
-		finished_at,
-		updated_at
-	FROM submissions WHERE token = $1`, token)
+	row := r.db.QueryRow(ctx, `SELECT `+submissionColumns+` FROM submissions WHERE token = $1`, token)
+	return scanSubmission(row)
+}
 
+// List returns a newest-first page of submissions.
+func (r *SubmissionRepository) List(ctx context.Context, query submission.ListQuery) (submission.ListResult, error) {
+	limit := query.Limit
+	if limit < 1 {
+		limit = 1
+	}
+
+	rows, err := r.db.Query(ctx, `SELECT `+submissionColumns+`
+	FROM submissions
+	WHERE ($1::text = '' OR status_code = $1)
+		AND ($2::text = '' OR language_slug = $2)
+		AND ($3::text = '' OR (created_at, token) < (
+			SELECT created_at, token FROM submissions WHERE token = $3
+		))
+	ORDER BY created_at DESC, token DESC
+	LIMIT $4`,
+		query.StatusCode,
+		query.Language,
+		query.BeforeToken,
+		limit+1,
+	)
+	if err != nil {
+		return submission.ListResult{}, err
+	}
+	defer rows.Close()
+
+	subs := make([]*submission.Submission, 0, limit)
+	for rows.Next() {
+		sub, err := scanSubmission(rows)
+		if err != nil {
+			return submission.ListResult{}, err
+		}
+		subs = append(subs, sub)
+	}
+	if err := rows.Err(); err != nil {
+		return submission.ListResult{}, err
+	}
+
+	var nextBefore *string
+	if len(subs) > limit {
+		value := subs[limit-1].Token
+		nextBefore = &value
+		subs = subs[:limit]
+	}
+
+	return submission.ListResult{
+		Submissions: subs,
+		NextBefore:  nextBefore,
+		Limit:       limit,
+	}, nil
+}
+
+func scanSubmission(row rowScanner) (*submission.Submission, error) {
 	sub := &submission.Submission{}
 	var expectedOutput pgtype.Text
 	var callbackURL pgtype.Text

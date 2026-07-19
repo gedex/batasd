@@ -14,6 +14,11 @@ import (
 	"github.com/gedex/batasd/internal/status"
 )
 
+const (
+	defaultListLimit = 20
+	maxListLimit     = 100
+)
+
 // LanguageRegistry resolves enabled languages by slug.
 type LanguageRegistry interface {
 	Get(slug string) (language.Language, bool)
@@ -125,6 +130,38 @@ func (s *Service) Get(ctx context.Context, token string) (*Submission, error) {
 		return nil, ValidationError{Field: "token", Message: "token is required"}
 	}
 	return s.repo.FindByToken(ctx, token)
+}
+
+// List returns a newest-first page of submissions.
+func (s *Service) List(ctx context.Context, query ListQuery) (ListResult, error) {
+	query.BeforeToken = strings.TrimSpace(query.BeforeToken)
+	query.StatusCode = strings.TrimSpace(query.StatusCode)
+	query.Language = strings.TrimSpace(query.Language)
+
+	if query.Limit == 0 {
+		query.Limit = defaultListLimit
+	}
+	if query.Limit < 1 {
+		return ListResult{}, ValidationError{Field: "limit", Message: "must be at least 1"}
+	}
+	if query.Limit > maxListLimit {
+		query.Limit = maxListLimit
+	}
+	if query.StatusCode != "" && !status.Valid(query.StatusCode) {
+		return ListResult{}, ValidationError{Field: "status", Message: "unsupported status"}
+	}
+	if query.Language != "" {
+		if _, ok := s.languages.Get(query.Language); !ok {
+			return ListResult{}, ValidationError{Field: "language", Message: "unsupported language"}
+		}
+	}
+	if query.BeforeToken != "" {
+		if _, err := s.repo.FindByToken(ctx, query.BeforeToken); err != nil {
+			return ListResult{}, err
+		}
+	}
+
+	return s.repo.List(ctx, query)
 }
 
 // ListCallbackAttempts returns callback delivery attempts for token.

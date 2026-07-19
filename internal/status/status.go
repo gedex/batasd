@@ -53,6 +53,16 @@ func List() []Status {
 	return out
 }
 
+// Valid reports whether code is a known public status code.
+func Valid(code string) bool {
+	for _, item := range all {
+		if item.Code == code {
+			return true
+		}
+	}
+	return false
+}
+
 // Describe returns the public status for code.
 func Describe(code string) Status {
 	for _, item := range all {

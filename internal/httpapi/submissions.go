@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -13,6 +15,37 @@ import (
 // SubmissionHandler serves submission create and fetch endpoints.
 type SubmissionHandler struct {
 	Service *submission.Service
+}
+
+// List handles submission list requests.
+func (h SubmissionHandler) List(w http.ResponseWriter, r *http.Request) {
+	query, err := parseSubmissionListQuery(r)
+	if err != nil {
+		var validation submission.ValidationError
+		if errors.As(err, &validation) {
+			writeError(w, http.StatusUnprocessableEntity, "validation_failed", validation.Error())
+			return
+		}
+		writeError(w, http.StatusBadRequest, "invalid_query", "query parameters are invalid")
+		return
+	}
+
+	result, err := h.Service.List(r.Context(), query)
+	if errors.Is(err, submission.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "not_found", "submission not found")
+		return
+	}
+	if err != nil {
+		var validation submission.ValidationError
+		if errors.As(err, &validation) {
+			writeError(w, http.StatusUnprocessableEntity, "validation_failed", validation.Error())
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "could not list submissions")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, submission.ToListResponse(result))
 }
 
 // Create handles submission creation requests.
@@ -76,6 +109,25 @@ func (h SubmissionHandler) CallbackAttempts(w http.ResponseWriter, r *http.Reque
 	}
 
 	writeJSON(w, http.StatusOK, submission.ToCallbackAttemptsResponse(token, attempts))
+}
+
+func parseSubmissionListQuery(r *http.Request) (submission.ListQuery, error) {
+	values := r.URL.Query()
+	query := submission.ListQuery{
+		BeforeToken: values.Get("before"),
+		StatusCode:  values.Get("status"),
+		Language:    values.Get("language"),
+	}
+
+	if rawLimit := strings.TrimSpace(values.Get("limit")); rawLimit != "" {
+		limit, err := strconv.Atoi(rawLimit)
+		if err != nil {
+			return query, submission.ValidationError{Field: "limit", Message: "must be an integer"}
+		}
+		query.Limit = limit
+	}
+
+	return query, nil
 }
 
 func writeJSONDecodeError(w http.ResponseWriter, err error) {

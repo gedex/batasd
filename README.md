@@ -69,6 +69,16 @@ Fetch the result with the returned token:
 curl -H 'Authorization: Bearer dev-token' http://localhost:18080/v1/submissions/sub_xxxxx
 ```
 
+List recent submissions:
+
+```bash
+curl -H 'Authorization: Bearer dev-token' \
+  'http://localhost:18080/v1/submissions?limit=20&status=accepted&language=python-3.12'
+```
+
+If the response includes `pagination.next_before`, pass that token as `before` to fetch the next page.
+The list endpoint defaults to `limit=20` and clamps oversized limits to `100`.
+
 Create a submission with a callback:
 
 ```bash

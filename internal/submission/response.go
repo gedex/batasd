@@ -47,6 +47,18 @@ type CallbackAttemptsResponse struct {
 	Attempts        []CallbackAttemptResponse `json:"attempts"`
 }
 
+// ListResponse is the public response for a submission list page.
+type ListResponse struct {
+	Submissions []Response     `json:"submissions"`
+	Pagination  PaginationInfo `json:"pagination"`
+}
+
+// PaginationInfo describes how to fetch the next page, when one exists.
+type PaginationInfo struct {
+	Limit      int     `json:"limit"`
+	NextBefore *string `json:"next_before"`
+}
+
 // ToResponse converts sub into its public API shape.
 func ToResponse(sub *Submission) Response {
 	return Response{
@@ -72,6 +84,21 @@ func ToResponse(sub *Submission) Response {
 		Limits:                 sub.Limits,
 		Arguments:              sub.Arguments,
 		CompilerOptions:        sub.CompilerOptions,
+	}
+}
+
+// ToListResponse converts result into the public list API shape.
+func ToListResponse(result ListResult) ListResponse {
+	responses := make([]Response, 0, len(result.Submissions))
+	for _, sub := range result.Submissions {
+		responses = append(responses, ToResponse(sub))
+	}
+	return ListResponse{
+		Submissions: responses,
+		Pagination: PaginationInfo{
+			Limit:      result.Limit,
+			NextBefore: result.NextBefore,
+		},
 	}
 }
 

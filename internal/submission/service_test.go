@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gedex/batasd/internal/language"
+	"github.com/gedex/batasd/internal/status"
 )
 
 func TestCreateAppliesLanguageDefaultLimits(t *testing.T) {
@@ -190,6 +191,148 @@ func TestCreateRejectsUnsupportedAdditionalFilesEncoding(t *testing.T) {
 	}
 }
 
+func TestListUsesDefaults(t *testing.T) {
+	repo := &fakeRepository{}
+	service := NewService(ServiceConfig{
+		Repository: repo,
+		Queue:      &fakeQueue{},
+		Languages:  fakeLanguages{},
+		Limits:     defaultTestLimits(),
+	})
+
+	result, err := service.List(context.Background(), ListQuery{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if repo.listQuery.Limit != defaultListLimit {
+		t.Fatalf("repo limit = %d, want %d", repo.listQuery.Limit, defaultListLimit)
+	}
+	if result.Limit != defaultListLimit {
+		t.Fatalf("result limit = %d, want %d", result.Limit, defaultListLimit)
+	}
+}
+
+func TestListValidatesAndPassesFilters(t *testing.T) {
+	repo := &fakeRepository{
+		created: &Submission{Token: "sub_cursor"},
+	}
+	service := NewService(ServiceConfig{
+		Repository: repo,
+		Queue:      &fakeQueue{},
+		Languages: fakeLanguages{
+			"python-3.12": {
+				Slug:    "python-3.12",
+				Enabled: true,
+			},
+		},
+		Limits: defaultTestLimits(),
+	})
+
+	_, err := service.List(context.Background(), ListQuery{
+		Limit:       2,
+		BeforeToken: " sub_cursor ",
+		StatusCode:  status.Accepted,
+		Language:    "python-3.12",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if repo.listQuery.Limit != 2 {
+		t.Fatalf("limit = %d, want 2", repo.listQuery.Limit)
+	}
+	if repo.listQuery.BeforeToken != "sub_cursor" {
+		t.Fatalf("before token = %q, want sub_cursor", repo.listQuery.BeforeToken)
+	}
+	if repo.listQuery.StatusCode != status.Accepted {
+		t.Fatalf("status = %q, want %q", repo.listQuery.StatusCode, status.Accepted)
+	}
+	if repo.listQuery.Language != "python-3.12" {
+		t.Fatalf("language = %q, want python-3.12", repo.listQuery.Language)
+	}
+}
+
+func TestListClampsLimit(t *testing.T) {
+	repo := &fakeRepository{}
+	service := NewService(ServiceConfig{
+		Repository: repo,
+		Queue:      &fakeQueue{},
+		Languages:  fakeLanguages{},
+		Limits:     defaultTestLimits(),
+	})
+
+	result, err := service.List(context.Background(), ListQuery{Limit: 10000000})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if repo.listQuery.Limit != maxListLimit {
+		t.Fatalf("repo limit = %d, want %d", repo.listQuery.Limit, maxListLimit)
+	}
+	if result.Limit != maxListLimit {
+		t.Fatalf("result limit = %d, want %d", result.Limit, maxListLimit)
+	}
+}
+
+func TestListRejectsInvalidQuery(t *testing.T) {
+	service := NewService(ServiceConfig{
+		Repository: &fakeRepository{},
+		Queue:      &fakeQueue{},
+		Languages:  fakeLanguages{},
+		Limits:     defaultTestLimits(),
+	})
+
+	tests := []struct {
+		name  string
+		query ListQuery
+		field string
+	}{
+		{
+			name:  "zero limit",
+			query: ListQuery{Limit: -1},
+			field: "limit",
+		},
+		{
+			name:  "unknown status",
+			query: ListQuery{StatusCode: "not_real"},
+			field: "status",
+		},
+		{
+			name:  "unknown language",
+			query: ListQuery{Language: "ruby-3.3"},
+			field: "language",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := service.List(context.Background(), tt.query)
+			if err == nil {
+				t.Fatal("List returned nil error, want validation error")
+			}
+			validation, ok := err.(ValidationError)
+			if !ok {
+				t.Fatalf("err = %T, want ValidationError", err)
+			}
+			if validation.Field != tt.field {
+				t.Fatalf("field = %q, want %q", validation.Field, tt.field)
+			}
+		})
+	}
+}
+
+func TestListRequiresExistingBeforeToken(t *testing.T) {
+	service := NewService(ServiceConfig{
+		Repository: &fakeRepository{},
+		Queue:      &fakeQueue{},
+		Languages:  fakeLanguages{},
+		Limits:     defaultTestLimits(),
+	})
+
+	_, err := service.List(context.Background(), ListQuery{BeforeToken: "sub_missing"})
+	if err != ErrNotFound {
+		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+}
+
 func TestListCallbackAttemptsRequiresExistingSubmission(t *testing.T) {
 	repo := &fakeRepository{
 		attempts: []CallbackAttempt{
@@ -269,8 +412,10 @@ func (q *fakeQueue) Enqueue(_ context.Context, token string) error {
 }
 
 type fakeRepository struct {
-	created  *Submission
-	attempts []CallbackAttempt
+	created    *Submission
+	listQuery  ListQuery
+	listResult ListResult
+	attempts   []CallbackAttempt
 }
 
 func (r *fakeRepository) Create(_ context.Context, sub *Submission) error {
@@ -283,6 +428,13 @@ func (r *fakeRepository) FindByToken(_ context.Context, token string) (*Submissi
 		return nil, ErrNotFound
 	}
 	return r.created, nil
+}
+
+func (r *fakeRepository) List(_ context.Context, query ListQuery) (ListResult, error) {
+	r.listQuery = query
+	result := r.listResult
+	result.Limit = query.Limit
+	return result, nil
 }
 
 func (r *fakeRepository) MarkProcessing(_ context.Context, _ string, _ time.Time) error {
