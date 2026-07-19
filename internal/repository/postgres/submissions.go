@@ -96,6 +96,8 @@ func (r *SubmissionRepository) FindByToken(ctx context.Context, token string) (*
 		status_code,
 		stdout,
 		stderr,
+		stdout_truncated,
+		stderr_truncated,
 		compile_output,
 		message,
 		exit_code,
@@ -115,6 +117,8 @@ func (r *SubmissionRepository) FindByToken(ctx context.Context, token string) (*
 	var callbackURL pgtype.Text
 	var stdout pgtype.Text
 	var stderr pgtype.Text
+	var stdoutTruncated pgtype.Bool
+	var stderrTruncated pgtype.Bool
 	var compileOutput pgtype.Text
 	var message pgtype.Text
 	var exitSignal pgtype.Text
@@ -144,6 +148,8 @@ func (r *SubmissionRepository) FindByToken(ctx context.Context, token string) (*
 		&sub.StatusCode,
 		&stdout,
 		&stderr,
+		&stdoutTruncated,
+		&stderrTruncated,
 		&compileOutput,
 		&message,
 		&exitCode,
@@ -168,6 +174,8 @@ func (r *SubmissionRepository) FindByToken(ctx context.Context, token string) (*
 	sub.CallbackURL = textPtr(callbackURL)
 	sub.Stdout = textPtr(stdout)
 	sub.Stderr = textPtr(stderr)
+	sub.StdoutTruncated = boolValue(stdoutTruncated)
+	sub.StderrTruncated = boolValue(stderrTruncated)
 	sub.CompileOutput = textPtr(compileOutput)
 	sub.Message = textPtr(message)
 	sub.ExitCode = intPtr(exitCode)
@@ -221,20 +229,24 @@ func (r *SubmissionRepository) StoreResult(ctx context.Context, token string, re
 		SET status_code = $2,
 			stdout = $3,
 			stderr = $4,
-			compile_output = $5,
-			message = $6,
-			exit_code = $7,
-			exit_signal = $8,
-			time_ms = $9,
-			wall_time_ms = $10,
-			memory_kb = $11,
-			finished_at = $12,
-			updated_at = $12
+			stdout_truncated = $5,
+			stderr_truncated = $6,
+			compile_output = $7,
+			message = $8,
+			exit_code = $9,
+			exit_signal = $10,
+			time_ms = $11,
+			wall_time_ms = $12,
+			memory_kb = $13,
+			finished_at = $14,
+			updated_at = $14
 		WHERE token = $1`,
 		token,
 		result.StatusCode,
 		result.Stdout,
 		result.Stderr,
+		result.StdoutTruncated,
+		result.StderrTruncated,
 		result.CompileOutput,
 		result.Message,
 		result.ExitCode,
@@ -379,6 +391,10 @@ func int64Ptr(value pgtype.Int8) *int64 {
 	}
 	out := value.Int64
 	return &out
+}
+
+func boolValue(value pgtype.Bool) bool {
+	return value.Valid && value.Bool
 }
 
 func timePtr(value pgtype.Timestamptz) *time.Time {

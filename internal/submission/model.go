@@ -63,6 +63,8 @@ type Submission struct {
 	StatusCode      string
 	Stdout          *string
 	Stderr          *string
+	StdoutTruncated bool
+	StderrTruncated bool
 	CompileOutput   *string
 	Message         *string
 	ExitCode        *int
@@ -79,17 +81,19 @@ type Submission struct {
 
 // Result is the final execution result stored for a submission.
 type Result struct {
-	StatusCode    string
-	Stdout        *string
-	Stderr        *string
-	CompileOutput *string
-	Message       *string
-	ExitCode      *int
-	ExitSignal    *string
-	TimeMS        *int64
-	WallTimeMS    *int64
-	MemoryKB      *int64
-	FinishedAt    time.Time
+	StatusCode      string
+	Stdout          *string
+	Stderr          *string
+	StdoutTruncated bool
+	StderrTruncated bool
+	CompileOutput   *string
+	Message         *string
+	ExitCode        *int
+	ExitSignal      *string
+	TimeMS          *int64
+	WallTimeMS      *int64
+	MemoryKB        *int64
+	FinishedAt      time.Time
 }
 
 // CallbackAttempt is one delivery attempt for a submission callback.

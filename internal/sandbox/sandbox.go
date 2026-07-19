@@ -19,6 +19,8 @@ type Command struct {
 type Result struct {
 	Stdout      string
 	Stderr      string
+	StdoutLimit bool
+	StderrLimit bool
 	Message     string
 	ExitCode    *int
 	ExitSignal  *string

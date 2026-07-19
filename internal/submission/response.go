@@ -13,6 +13,8 @@ type Response struct {
 	Status          status.Status `json:"status"`
 	Stdout          *string       `json:"stdout"`
 	Stderr          *string       `json:"stderr"`
+	StdoutTruncated bool          `json:"stdout_truncated"`
+	StderrTruncated bool          `json:"stderr_truncated"`
 	CompileOutput   *string       `json:"compile_output"`
 	Message         *string       `json:"message"`
 	ExitCode        *int          `json:"exit_code"`
@@ -52,6 +54,8 @@ func ToResponse(sub *Submission) Response {
 		Status:          status.Describe(sub.StatusCode),
 		Stdout:          sub.Stdout,
 		Stderr:          sub.Stderr,
+		StdoutTruncated: sub.StdoutTruncated,
+		StderrTruncated: sub.StderrTruncated,
 		CompileOutput:   sub.CompileOutput,
 		Message:         sub.Message,
 		ExitCode:        sub.ExitCode,
@@ -93,6 +97,8 @@ func ToResultResponse(sub *Submission, result Result) Response {
 	completed.StatusCode = result.StatusCode
 	completed.Stdout = result.Stdout
 	completed.Stderr = result.Stderr
+	completed.StdoutTruncated = result.StdoutTruncated
+	completed.StderrTruncated = result.StderrTruncated
 	completed.CompileOutput = result.CompileOutput
 	completed.Message = result.Message
 	completed.ExitCode = result.ExitCode

@@ -102,6 +102,8 @@ func (r *Runner) Run(ctx context.Context, command sandbox.Command) sandbox.Resul
 	result := sandbox.Result{
 		Stdout:      stdout.String(),
 		Stderr:      stderr.String(),
+		StdoutLimit: stdout.Exceeded(),
+		StderrLimit: stderr.Exceeded(),
 		TimeMS:      wallTimeMS,
 		WallTimeMS:  wallTimeMS,
 		OutputLimit: stdout.Exceeded() || stderr.Exceeded(),

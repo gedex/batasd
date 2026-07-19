@@ -86,6 +86,39 @@ func TestEngineRunMapsRuntimeError(t *testing.T) {
 	}
 }
 
+func TestEngineRunMapsOutputLimitTruncation(t *testing.T) {
+	engine := NewEngine(fakeRegistry{
+		"python-3.12": {
+			Slug:       "python-3.12",
+			SourceFile: "main.py",
+			Run:        []string{"python3", "main.py"},
+			Enabled:    true,
+		},
+	}, fakeRunner{
+		result: sandbox.Result{
+			Stdout:      "xxxx",
+			OutputLimit: true,
+			StdoutLimit: true,
+		},
+	}, t.TempDir())
+
+	result := engine.Run(context.Background(), &submission.Submission{
+		Token:    "sub_test",
+		Language: "python-3.12",
+		Source:   "print('too much')",
+		Limits:   submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1},
+	})
+	if result.StatusCode != status.OutputLimitExceeded {
+		t.Fatalf("expected output limit exceeded, got %s", result.StatusCode)
+	}
+	if !result.StdoutTruncated {
+		t.Fatal("StdoutTruncated = false, want true")
+	}
+	if result.StderrTruncated {
+		t.Fatal("StderrTruncated = true, want false")
+	}
+}
+
 func TestEngineRunMapsMemoryLimitExceeded(t *testing.T) {
 	engine := NewEngine(fakeRegistry{
 		"python-3.12": {

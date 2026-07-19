@@ -381,17 +381,19 @@ func fromSandbox(statusCode string, run sandbox.Result, compileOutput *string, m
 	}
 
 	return submission.Result{
-		StatusCode:    statusCode,
-		Stdout:        ptrIfNotEmpty(run.Stdout),
-		Stderr:        ptrIfNotEmpty(run.Stderr),
-		CompileOutput: compileOutput,
-		Message:       msg,
-		ExitCode:      run.ExitCode,
-		ExitSignal:    run.ExitSignal,
-		TimeMS:        int64Ptr(run.TimeMS),
-		WallTimeMS:    int64Ptr(run.WallTimeMS),
-		MemoryKB:      run.MemoryKB,
-		FinishedAt:    finishedAt,
+		StatusCode:      statusCode,
+		Stdout:          ptrIfNotEmpty(run.Stdout),
+		Stderr:          ptrIfNotEmpty(run.Stderr),
+		StdoutTruncated: run.StdoutLimit,
+		StderrTruncated: run.StderrLimit,
+		CompileOutput:   compileOutput,
+		Message:         msg,
+		ExitCode:        run.ExitCode,
+		ExitSignal:      run.ExitSignal,
+		TimeMS:          int64Ptr(run.TimeMS),
+		WallTimeMS:      int64Ptr(run.WallTimeMS),
+		MemoryKB:        run.MemoryKB,
+		FinishedAt:      finishedAt,
 	}
 }
 
