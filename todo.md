@@ -2,6 +2,7 @@
 
 - Add the full language catalog beyond the initial MVP languages.
 - Add batch submission create/fetch APIs once single-submission execution is stable.
+- Add an OpenAPI 3.1 API contract as the source of truth for generated clients, including drift checks against chi routes.
 - Add multi-file project mode with user-provided compile and run scripts.
 - Add submission deletion APIs and related authorization policy.
 - Add durable production queue observability, metrics, and worker dashboards.
