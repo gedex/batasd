@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -33,6 +34,16 @@ func (h SubmissionHandler) List(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_query", "query parameters are invalid")
 		return
 	}
+	fields, err := parseSubmissionFields(r)
+	if err != nil {
+		var validation submission.ValidationError
+		if errors.As(err, &validation) {
+			writeError(w, http.StatusUnprocessableEntity, "validation_failed", validation.Error())
+			return
+		}
+		writeError(w, http.StatusBadRequest, "invalid_query", "query parameters are invalid")
+		return
+	}
 
 	result, err := h.Service.List(r.Context(), query)
 	if errors.Is(err, submission.ErrNotFound) {
@@ -49,7 +60,7 @@ func (h SubmissionHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, submission.ToListResponse(result))
+	writeJSON(w, http.StatusOK, listResponseValue(submission.ToListResponse(result), fields))
 }
 
 // Create handles submission creation requests.
@@ -63,6 +74,19 @@ func (h SubmissionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 		writeError(w, http.StatusBadRequest, "invalid_query", "query parameters are invalid")
 		return
+	}
+	var fields []string
+	if wait {
+		fields, err = parseSubmissionFields(r)
+		if err != nil {
+			var validation submission.ValidationError
+			if errors.As(err, &validation) {
+				writeError(w, http.StatusUnprocessableEntity, "validation_failed", validation.Error())
+				return
+			}
+			writeError(w, http.StatusBadRequest, "invalid_query", "query parameters are invalid")
+			return
+		}
 	}
 
 	var req submission.CreateRequest
@@ -83,7 +107,7 @@ func (h SubmissionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if wait {
-		h.waitForCreatedSubmission(w, r, sub)
+		h.waitForCreatedSubmission(w, r, sub, fields)
 		return
 	}
 
@@ -92,6 +116,17 @@ func (h SubmissionHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // Get handles submission fetch requests.
 func (h SubmissionHandler) Get(w http.ResponseWriter, r *http.Request) {
+	fields, err := parseSubmissionFields(r)
+	if err != nil {
+		var validation submission.ValidationError
+		if errors.As(err, &validation) {
+			writeError(w, http.StatusUnprocessableEntity, "validation_failed", validation.Error())
+			return
+		}
+		writeError(w, http.StatusBadRequest, "invalid_query", "query parameters are invalid")
+		return
+	}
+
 	sub, err := h.Service.Get(r.Context(), chi.URLParam(r, "token"))
 	if errors.Is(err, submission.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "not_found", "submission not found")
@@ -107,7 +142,7 @@ func (h SubmissionHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, submission.ToResponse(sub))
+	writeJSON(w, http.StatusOK, submissionResponseValue(submission.ToResponse(sub), fields))
 }
 
 // CallbackAttempts handles callback attempt fetch requests.
@@ -163,7 +198,39 @@ func parseSubmissionWait(r *http.Request) (bool, error) {
 	return wait, nil
 }
 
-func (h SubmissionHandler) waitForCreatedSubmission(w http.ResponseWriter, r *http.Request, sub *submission.Submission) {
+func parseSubmissionFields(r *http.Request) ([]string, error) {
+	rawFields := strings.TrimSpace(r.URL.Query().Get("fields"))
+	if rawFields == "" || rawFields == "*" {
+		return nil, nil
+	}
+
+	parts := strings.Split(rawFields, ",")
+	fields := make([]string, 0, len(parts))
+	seen := make(map[string]struct{}, len(parts))
+	for _, part := range parts {
+		field := strings.TrimSpace(part)
+		if field == "" {
+			continue
+		}
+		if field == "*" {
+			return nil, submission.ValidationError{Field: "fields", Message: "cannot combine * with other fields"}
+		}
+		if !submission.ValidResponseField(field) {
+			return nil, submission.ValidationError{Field: "fields", Message: fmt.Sprintf("unsupported field %q", field)}
+		}
+		if _, ok := seen[field]; ok {
+			continue
+		}
+		seen[field] = struct{}{}
+		fields = append(fields, field)
+	}
+	if len(fields) == 0 {
+		return nil, nil
+	}
+	return fields, nil
+}
+
+func (h SubmissionHandler) waitForCreatedSubmission(w http.ResponseWriter, r *http.Request, sub *submission.Submission, fields []string) {
 	timeout := h.WaitTimeout
 	if timeout <= 0 {
 		timeout = 10 * time.Second
@@ -178,7 +245,7 @@ func (h SubmissionHandler) waitForCreatedSubmission(w http.ResponseWriter, r *ht
 			if waitedSub == nil {
 				waitedSub = sub
 			}
-			writeJSON(w, http.StatusAccepted, submission.ToResponse(waitedSub))
+			writeJSON(w, http.StatusAccepted, submissionResponseValue(submission.ToResponse(waitedSub), fields))
 			return
 		}
 		var validation submission.ValidationError
@@ -190,7 +257,21 @@ func (h SubmissionHandler) waitForCreatedSubmission(w http.ResponseWriter, r *ht
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, submission.ToResponse(waitedSub))
+	writeJSON(w, http.StatusCreated, submissionResponseValue(submission.ToResponse(waitedSub), fields))
+}
+
+func submissionResponseValue(response submission.Response, fields []string) any {
+	if len(fields) == 0 {
+		return response
+	}
+	return submission.SelectResponseFields(response, fields)
+}
+
+func listResponseValue(response submission.ListResponse, fields []string) any {
+	if len(fields) == 0 {
+		return response
+	}
+	return submission.SelectListResponseFields(response, fields)
 }
 
 func writeJSONDecodeError(w http.ResponseWriter, err error) {

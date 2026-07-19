@@ -59,6 +59,37 @@ type PaginationInfo struct {
 	NextBefore *string `json:"next_before"`
 }
 
+// ValidResponseField reports whether field can be selected with the fields query parameter.
+func ValidResponseField(field string) bool {
+	switch field {
+	case "token",
+		"language",
+		"status",
+		"stdout",
+		"stderr",
+		"stdout_truncated",
+		"stderr_truncated",
+		"compile_output",
+		"compile_output_truncated",
+		"message",
+		"exit_code",
+		"exit_signal",
+		"time_ms",
+		"wall_time_ms",
+		"memory_kb",
+		"created_at",
+		"queued_at",
+		"started_at",
+		"finished_at",
+		"limits",
+		"arguments",
+		"compiler_options":
+		return true
+	default:
+		return false
+	}
+}
+
 // ToResponse converts sub into its public API shape.
 func ToResponse(sub *Submission) Response {
 	return Response{
@@ -87,6 +118,60 @@ func ToResponse(sub *Submission) Response {
 	}
 }
 
+// SelectResponseFields returns a map containing only fields from response.
+func SelectResponseFields(response Response, fields []string) map[string]any {
+	out := make(map[string]any, len(fields))
+	for _, field := range fields {
+		switch field {
+		case "token":
+			out[field] = response.Token
+		case "language":
+			out[field] = response.Language
+		case "status":
+			out[field] = response.Status
+		case "stdout":
+			out[field] = response.Stdout
+		case "stderr":
+			out[field] = response.Stderr
+		case "stdout_truncated":
+			out[field] = response.StdoutTruncated
+		case "stderr_truncated":
+			out[field] = response.StderrTruncated
+		case "compile_output":
+			out[field] = response.CompileOutput
+		case "compile_output_truncated":
+			out[field] = response.CompileOutputTruncated
+		case "message":
+			out[field] = response.Message
+		case "exit_code":
+			out[field] = response.ExitCode
+		case "exit_signal":
+			out[field] = response.ExitSignal
+		case "time_ms":
+			out[field] = response.TimeMS
+		case "wall_time_ms":
+			out[field] = response.WallTimeMS
+		case "memory_kb":
+			out[field] = response.MemoryKB
+		case "created_at":
+			out[field] = response.CreatedAt
+		case "queued_at":
+			out[field] = response.QueuedAt
+		case "started_at":
+			out[field] = response.StartedAt
+		case "finished_at":
+			out[field] = response.FinishedAt
+		case "limits":
+			out[field] = response.Limits
+		case "arguments":
+			out[field] = response.Arguments
+		case "compiler_options":
+			out[field] = response.CompilerOptions
+		}
+	}
+	return out
+}
+
 // ToListResponse converts result into the public list API shape.
 func ToListResponse(result ListResult) ListResponse {
 	responses := make([]Response, 0, len(result.Submissions))
@@ -99,6 +184,18 @@ func ToListResponse(result ListResult) ListResponse {
 			Limit:      result.Limit,
 			NextBefore: result.NextBefore,
 		},
+	}
+}
+
+// SelectListResponseFields returns a list response with filtered submission items.
+func SelectListResponseFields(response ListResponse, fields []string) map[string]any {
+	submissions := make([]map[string]any, 0, len(response.Submissions))
+	for _, sub := range response.Submissions {
+		submissions = append(submissions, SelectResponseFields(sub, fields))
+	}
+	return map[string]any{
+		"submissions": submissions,
+		"pagination":  response.Pagination,
 	}
 }
 

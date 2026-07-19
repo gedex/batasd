@@ -80,6 +80,15 @@ Fetch the result with the returned token:
 curl -H 'Authorization: Bearer dev-token' http://localhost:18080/v1/submissions/sub_xxxxx
 ```
 
+Fetch only selected submission fields:
+
+```bash
+curl -H 'Authorization: Bearer dev-token' \
+  'http://localhost:18080/v1/submissions/sub_xxxxx?fields=token,status,stdout,time_ms'
+```
+
+`fields` also works on `GET /v1/submissions` and `POST /v1/submissions?wait=true`. On list responses, `fields` filters each submission item and keeps `pagination`.
+
 List recent submissions:
 
 ```bash

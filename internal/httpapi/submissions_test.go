@@ -132,6 +132,70 @@ func TestParseSubmissionWaitRejectsInvalidValue(t *testing.T) {
 	}
 }
 
+func TestParseSubmissionFields(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/v1/submissions/sub_test?fields=token,status,stdout,token", nil)
+
+	fields, err := parseSubmissionFields(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"token", "status", "stdout"}
+	if len(fields) != len(want) {
+		t.Fatalf("len(fields) = %d, want %d", len(fields), len(want))
+	}
+	for i := range want {
+		if fields[i] != want[i] {
+			t.Fatalf("fields[%d] = %q, want %q", i, fields[i], want[i])
+		}
+	}
+}
+
+func TestParseSubmissionFieldsAllDefaultsToNil(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/v1/submissions/sub_test?fields=*", nil)
+
+	fields, err := parseSubmissionFields(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fields != nil {
+		t.Fatalf("fields = %#v, want nil", fields)
+	}
+}
+
+func TestParseSubmissionFieldsRejectsInvalidValue(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/v1/submissions/sub_test?fields=token,source", nil)
+
+	_, err := parseSubmissionFields(req)
+	if err == nil {
+		t.Fatal("parseSubmissionFields returned nil error, want validation error")
+	}
+
+	var validation submission.ValidationError
+	if !errors.As(err, &validation) {
+		t.Fatalf("err = %T, want ValidationError", err)
+	}
+	if validation.Field != "fields" {
+		t.Fatalf("field = %q, want fields", validation.Field)
+	}
+}
+
+func TestParseSubmissionFieldsRejectsMixedWildcard(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/v1/submissions/sub_test?fields=token,*", nil)
+
+	_, err := parseSubmissionFields(req)
+	if err == nil {
+		t.Fatal("parseSubmissionFields returned nil error, want validation error")
+	}
+
+	var validation submission.ValidationError
+	if !errors.As(err, &validation) {
+		t.Fatalf("err = %T, want ValidationError", err)
+	}
+	if validation.Field != "fields" {
+		t.Fatalf("field = %q, want fields", validation.Field)
+	}
+}
+
 type waitTestLanguages map[string]language.Language
 
 func (l waitTestLanguages) Get(slug string) (language.Language, bool) {
