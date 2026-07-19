@@ -65,8 +65,10 @@ type CallbackConfig struct {
 
 // SubmissionConfig contains default submission execution limits.
 type SubmissionConfig struct {
-	DefaultLimits submission.Limits
-	MaxLimits     submission.Limits
+	DefaultLimits    submission.Limits
+	MaxLimits        submission.Limits
+	WaitTimeout      time.Duration
+	WaitPollInterval time.Duration
 }
 
 // Load reads configuration from environment variables and applies defaults.
@@ -101,6 +103,8 @@ func Load() (Config, error) {
 			Timeout: time.Duration(envInt("CALLBACK_TIMEOUT_MS", 5000)) * time.Millisecond,
 		},
 		Submissions: SubmissionConfig{
+			WaitTimeout:      time.Duration(envInt("SUBMISSION_WAIT_TIMEOUT_MS", 10000)) * time.Millisecond,
+			WaitPollInterval: time.Duration(envInt("SUBMISSION_WAIT_POLL_INTERVAL_MS", 100)) * time.Millisecond,
 			DefaultLimits: submission.Limits{
 				CPUTimeMS:    envInt64("LIMIT_CPU_TIME_MS", 5000),
 				CPUExtraMS:   envInt64("LIMIT_CPU_EXTRA_MS", 1000),
@@ -169,6 +173,12 @@ func (c Config) Validate() error {
 
 	if c.Callback.Timeout <= 0 {
 		return errors.New("CALLBACK_TIMEOUT_MS must be greater than 0")
+	}
+	if c.Submissions.WaitTimeout <= 0 {
+		return errors.New("SUBMISSION_WAIT_TIMEOUT_MS must be greater than 0")
+	}
+	if c.Submissions.WaitPollInterval <= 0 {
+		return errors.New("SUBMISSION_WAIT_POLL_INTERVAL_MS must be greater than 0")
 	}
 
 	if err := validateDefaultLimits(c.Submissions.DefaultLimits, c.Submissions.MaxLimits); err != nil {

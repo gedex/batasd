@@ -63,6 +63,17 @@ curl -X POST http://localhost:18080/v1/submissions \
   -d '{"language":"python-3.12","source":"print(\"hello\")","input":"","expected_output":"hello"}'
 ```
 
+Create a submission and wait briefly for completion:
+
+```bash
+curl -X POST 'http://localhost:18080/v1/submissions?wait=true' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer dev-token' \
+  -d '{"language":"python-3.12","source":"print(\"hello\")","input":"","expected_output":"hello"}'
+```
+
+`wait=true` is bounded by `SUBMISSION_WAIT_TIMEOUT_MS` and polls every `SUBMISSION_WAIT_POLL_INTERVAL_MS`. If the wait times out before the submission reaches a terminal status, the API returns `202 Accepted` with the latest queued or processing state.
+
 Fetch the result with the returned token:
 
 ```bash
@@ -151,6 +162,8 @@ Important defaults:
 - `HTTP_MAX_BODY_BYTES=26214400`
 - `DATABASE_URL=postgres://sandbox:sandbox@localhost:5432/sandbox?sslmode=disable`
 - `AUTHN_TOKENS=dev-token`
+- `SUBMISSION_WAIT_TIMEOUT_MS=10000`
+- `SUBMISSION_WAIT_POLL_INTERVAL_MS=100`
 - `SANDBOX_DRIVER=direct`
 - `SANDBOX_DOCKER_IMAGE=batasd-runner:local`
 - `SANDBOX_ISOLATE_BINARY=isolate`

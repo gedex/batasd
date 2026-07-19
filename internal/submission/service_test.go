@@ -212,6 +212,59 @@ func TestListUsesDefaults(t *testing.T) {
 	}
 }
 
+func TestWaitForCompletionReturnsTerminalSubmission(t *testing.T) {
+	repo := &fakeRepository{
+		findResults: []*Submission{
+			{Token: "sub_test", StatusCode: status.Queued},
+			{Token: "sub_test", StatusCode: status.Accepted},
+		},
+	}
+	service := NewService(ServiceConfig{
+		Repository: repo,
+		Queue:      &fakeQueue{},
+		Languages:  fakeLanguages{},
+		Limits:     defaultTestLimits(),
+	})
+
+	sub, err := service.WaitForCompletion(context.Background(), "sub_test", time.Millisecond)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sub.StatusCode != status.Accepted {
+		t.Fatalf("status = %q, want %q", sub.StatusCode, status.Accepted)
+	}
+	if repo.findCalls != 2 {
+		t.Fatalf("find calls = %d, want 2", repo.findCalls)
+	}
+}
+
+func TestWaitForCompletionReturnsLastSubmissionOnContextDone(t *testing.T) {
+	repo := &fakeRepository{
+		findResults: []*Submission{
+			{Token: "sub_test", StatusCode: status.Processing},
+		},
+	}
+	service := NewService(ServiceConfig{
+		Repository: repo,
+		Queue:      &fakeQueue{},
+		Languages:  fakeLanguages{},
+		Limits:     defaultTestLimits(),
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	sub, err := service.WaitForCompletion(ctx, "sub_test", time.Second)
+	if err == nil {
+		t.Fatal("WaitForCompletion returned nil error, want context error")
+	}
+	if sub == nil {
+		t.Fatal("submission = nil, want last observed submission")
+	}
+	if sub.StatusCode != status.Processing {
+		t.Fatalf("status = %q, want %q", sub.StatusCode, status.Processing)
+	}
+}
+
 func TestListValidatesAndPassesFilters(t *testing.T) {
 	repo := &fakeRepository{
 		created: &Submission{Token: "sub_cursor"},
@@ -412,10 +465,12 @@ func (q *fakeQueue) Enqueue(_ context.Context, token string) error {
 }
 
 type fakeRepository struct {
-	created    *Submission
-	listQuery  ListQuery
-	listResult ListResult
-	attempts   []CallbackAttempt
+	created     *Submission
+	findResults []*Submission
+	findCalls   int
+	listQuery   ListQuery
+	listResult  ListResult
+	attempts    []CallbackAttempt
 }
 
 func (r *fakeRepository) Create(_ context.Context, sub *Submission) error {
@@ -424,6 +479,18 @@ func (r *fakeRepository) Create(_ context.Context, sub *Submission) error {
 }
 
 func (r *fakeRepository) FindByToken(_ context.Context, token string) (*Submission, error) {
+	if len(r.findResults) > 0 {
+		index := r.findCalls
+		if index >= len(r.findResults) {
+			index = len(r.findResults) - 1
+		}
+		r.findCalls++
+		sub := r.findResults[index]
+		if sub.Token != token {
+			return nil, ErrNotFound
+		}
+		return sub, nil
+	}
 	if r.created == nil || r.created.Token != token {
 		return nil, ErrNotFound
 	}

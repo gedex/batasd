@@ -84,7 +84,11 @@ func NewRouter(deps Dependencies) http.Handler {
 			})
 		})
 
-		submissionHandler := SubmissionHandler{Service: deps.Submissions}
+		submissionHandler := SubmissionHandler{
+			Service:          deps.Submissions,
+			WaitTimeout:      deps.Config.Submissions.WaitTimeout,
+			WaitPollInterval: deps.Config.Submissions.WaitPollInterval,
+		}
 		r.Get("/submissions", submissionHandler.List)
 		r.Post("/submissions", submissionHandler.Create)
 		r.Get("/submissions/{token}/callbacks", submissionHandler.CallbackAttempts)
@@ -106,8 +110,10 @@ func publicConfig(cfg config.Config) map[string]any {
 			"isolate_cgroup": cfg.Sandbox.IsolateControlGroup,
 		},
 		"submissions": map[string]any{
-			"default_limits": cfg.Submissions.DefaultLimits,
-			"max_limits":     cfg.Submissions.MaxLimits,
+			"default_limits":        cfg.Submissions.DefaultLimits,
+			"max_limits":            cfg.Submissions.MaxLimits,
+			"wait_timeout_ms":       cfg.Submissions.WaitTimeout.Milliseconds(),
+			"wait_poll_interval_ms": cfg.Submissions.WaitPollInterval.Milliseconds(),
 		},
 		"callbacks": map[string]any{
 			"timeout_ms": cfg.Callback.Timeout.Milliseconds(),

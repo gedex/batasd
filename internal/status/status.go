@@ -63,6 +63,16 @@ func Valid(code string) bool {
 	return false
 }
 
+// Terminal reports whether code represents a completed submission.
+func Terminal(code string) bool {
+	switch code {
+	case Queued, Processing:
+		return false
+	default:
+		return true
+	}
+}
+
 // Describe returns the public status for code.
 func Describe(code string) Status {
 	for _, item := range all {

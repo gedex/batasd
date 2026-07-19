@@ -132,6 +132,36 @@ func (s *Service) Get(ctx context.Context, token string) (*Submission, error) {
 	return s.repo.FindByToken(ctx, token)
 }
 
+// WaitForCompletion polls token until it reaches a terminal status or ctx ends.
+func (s *Service) WaitForCompletion(ctx context.Context, token string, pollInterval time.Duration) (*Submission, error) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return nil, ValidationError{Field: "token", Message: "token is required"}
+	}
+	if pollInterval <= 0 {
+		pollInterval = 100 * time.Millisecond
+	}
+
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
+
+	for {
+		sub, err := s.repo.FindByToken(ctx, token)
+		if err != nil {
+			return nil, err
+		}
+		if status.Terminal(sub.StatusCode) {
+			return sub, nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return sub, ctx.Err()
+		case <-ticker.C:
+		}
+	}
+}
+
 // List returns a newest-first page of submissions.
 func (s *Service) List(ctx context.Context, query ListQuery) (ListResult, error) {
 	query.BeforeToken = strings.TrimSpace(query.BeforeToken)
