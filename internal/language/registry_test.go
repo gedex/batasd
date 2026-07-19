@@ -2,6 +2,48 @@ package language
 
 import "testing"
 
+func TestLoadCatalogIncludesExpectedLanguages(t *testing.T) {
+	registry, err := LoadCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := map[string]struct {
+		sourceFile string
+		compiled   bool
+	}{
+		"c-gcc":       {sourceFile: "main.c", compiled: true},
+		"cpp-gcc":     {sourceFile: "main.cpp", compiled: true},
+		"go-1.24":     {sourceFile: "main.go", compiled: true},
+		"java-21":     {sourceFile: "Main.java", compiled: true},
+		"node-22":     {sourceFile: "main.js"},
+		"php-8.3":     {sourceFile: "main.php"},
+		"python-3.12": {sourceFile: "main.py"},
+		"rust-1.88":   {sourceFile: "main.rs", compiled: true},
+	}
+
+	for slug, want := range expected {
+		t.Run(slug, func(t *testing.T) {
+			lang, ok := registry.Get(slug)
+			if !ok {
+				t.Fatalf("%s language not found", slug)
+			}
+			if lang.SourceFile != want.sourceFile {
+				t.Fatalf("SourceFile = %q, want %q", lang.SourceFile, want.sourceFile)
+			}
+			if len(lang.Run) == 0 {
+				t.Fatal("Run command is empty")
+			}
+			if want.compiled && len(lang.Compile) == 0 {
+				t.Fatal("Compile command is empty")
+			}
+			if !want.compiled && len(lang.Compile) != 0 {
+				t.Fatalf("Compile command = %v, want empty", lang.Compile)
+			}
+		})
+	}
+}
+
 func TestLoadCatalogIncludesNodeDefaultLimits(t *testing.T) {
 	registry, err := LoadCatalog()
 	if err != nil {

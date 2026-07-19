@@ -90,8 +90,26 @@ detect_language() {
   ext="$(printf '%s' "${path##*.}" | tr '[:upper:]' '[:lower:]')"
 
   case "$ext" in
+    c)
+      printf 'c-gcc\n'
+      ;;
+    cc | cpp | cxx)
+      printf 'cpp-gcc\n'
+      ;;
+    go)
+      printf 'go-1.24\n'
+      ;;
+    java)
+      printf 'java-21\n'
+      ;;
+    php)
+      printf 'php-8.3\n'
+      ;;
     py)
       printf 'python-3.12\n'
+      ;;
+    rs)
+      printf 'rust-1.88\n'
       ;;
     js | mjs | cjs)
       printf 'node-22\n'

@@ -1,0 +1,573 @@
+openapi: 3.1.0
+info:
+  title: batasd API
+  version: 0.1.0
+  description: Internal code execution API for creating, running, and inspecting sandboxed submissions.
+servers:
+  - url: http://localhost:18080
+security:
+  - bearerAuth: []
+tags:
+  - name: health
+  - name: auth
+  - name: languages
+  - name: submissions
+  - name: system
+paths:
+  /healthz:
+    get:
+      tags: [health]
+      security: []
+      summary: Check service health
+      responses:
+        "200":
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+  /v1/authenticate:
+    post:
+      tags: [auth]
+      summary: Validate bearer token authentication
+      responses:
+        "200":
+          description: Token is valid.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authenticated]
+                properties:
+                  authenticated:
+                    type: boolean
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/languages:
+    get:
+      tags: [languages]
+      summary: List enabled languages
+      responses:
+        "200":
+          description: Enabled languages.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Language"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/languages/{slug}:
+    get:
+      tags: [languages]
+      summary: Fetch one enabled language
+      parameters:
+        - $ref: "#/components/parameters/LanguageSlug"
+      responses:
+        "200":
+          description: Language details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Language"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/statuses:
+    get:
+      tags: [submissions]
+      summary: List submission statuses
+      responses:
+        "200":
+          description: Status catalog.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Status"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/config:
+    get:
+      tags: [system]
+      summary: Fetch public runtime configuration
+      responses:
+        "200":
+          description: Public runtime configuration.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicConfig"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/system:
+    get:
+      tags: [system]
+      summary: Fetch minimal system information
+      responses:
+        "200":
+          description: System details.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [environment, sandbox]
+                properties:
+                  environment:
+                    type: string
+                  sandbox:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/workers:
+    get:
+      tags: [system]
+      summary: Inspect queue and worker activity
+      responses:
+        "200":
+          description: Worker and queue state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkersResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/submissions:
+    get:
+      tags: [submissions]
+      summary: List recent submissions
+      parameters:
+        - $ref: "#/components/parameters/ListLimit"
+        - $ref: "#/components/parameters/BeforeToken"
+        - $ref: "#/components/parameters/StatusFilter"
+        - $ref: "#/components/parameters/LanguageFilter"
+        - $ref: "#/components/parameters/Fields"
+      responses:
+        "200":
+          description: Submission page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    post:
+      tags: [submissions]
+      summary: Create a submission
+      parameters:
+        - $ref: "#/components/parameters/Wait"
+        - $ref: "#/components/parameters/Fields"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubmissionRequest"
+      responses:
+        "201":
+          description: Submission created, or completed when wait=true.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CreatedSubmissionResponse"
+                  - $ref: "#/components/schemas/Submission"
+        "202":
+          description: Submission created but wait timeout elapsed before terminal status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+        "400":
+          $ref: "#/components/responses/InvalidJSON"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          $ref: "#/components/responses/RequestTooLarge"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /v1/submissions/{token}:
+    get:
+      tags: [submissions]
+      summary: Fetch one submission
+      parameters:
+        - $ref: "#/components/parameters/SubmissionToken"
+        - $ref: "#/components/parameters/Fields"
+      responses:
+        "200":
+          description: Submission details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /v1/submissions/{token}/callbacks:
+    get:
+      tags: [submissions]
+      summary: List callback delivery attempts
+      parameters:
+        - $ref: "#/components/parameters/SubmissionToken"
+      responses:
+        "200":
+          description: Callback attempts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallbackAttemptsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    SubmissionToken:
+      name: token
+      in: path
+      required: true
+      schema:
+        type: string
+      example: sub_abc123
+    LanguageSlug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+      example: python-3.12
+    ListLimit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 20
+        maximum: 100
+      description: Page size. Oversized values are clamped to 100.
+    BeforeToken:
+      name: before
+      in: query
+      schema:
+        type: string
+      description: Cursor token from pagination.next_before.
+    StatusFilter:
+      name: status
+      in: query
+      schema:
+        $ref: "#/components/schemas/StatusCode"
+    LanguageFilter:
+      name: language
+      in: query
+      schema:
+        type: string
+    Wait:
+      name: wait
+      in: query
+      schema:
+        type: boolean
+        default: false
+      description: Wait until the submission reaches terminal status or the server-side wait timeout elapses.
+    Fields:
+      name: fields
+      in: query
+      schema:
+        type: string
+      description: Comma-separated top-level submission response fields. Use * or omit for the full response.
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InvalidJSON:
+      description: Request body was not valid JSON.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RequestTooLarge:
+      description: Request body exceeds configured HTTP limit.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationFailed:
+      description: Request validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    StatusCode:
+      type: string
+      enum:
+        - queued
+        - processing
+        - accepted
+        - wrong_answer
+        - compilation_error
+        - runtime_error
+        - time_limit_exceeded
+        - memory_limit_exceeded
+        - output_limit_exceeded
+        - internal_error
+        - sandbox_error
+    Status:
+      type: object
+      required: [code, description]
+      properties:
+        code:
+          $ref: "#/components/schemas/StatusCode"
+        description:
+          type: string
+    Limits:
+      type: object
+      properties:
+        cpu_time_ms:
+          type: integer
+          format: int64
+        cpu_extra_time_ms:
+          type: integer
+          format: int64
+        wall_time_ms:
+          type: integer
+          format: int64
+        memory_kb:
+          type: integer
+          format: int64
+        stack_kb:
+          type: integer
+          format: int64
+        max_processes:
+          type: integer
+        max_output_kb:
+          type: integer
+          format: int64
+        max_file_kb:
+          type: integer
+          format: int64
+        network:
+          type: boolean
+        runs:
+          type: integer
+    Language:
+      type: object
+      required: [slug, name, version, source_file, compile, run, enabled]
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        version:
+          type: string
+        source_file:
+          type: string
+        compile:
+          type: array
+          items:
+            type: string
+        run:
+          type: array
+          items:
+            type: string
+        default_limits:
+          $ref: "#/components/schemas/Limits"
+        enabled:
+          type: boolean
+    AdditionalFiles:
+      type: object
+      required: [encoding, content]
+      properties:
+        encoding:
+          type: string
+          enum: [zip_base64]
+        content:
+          type: string
+          contentEncoding: base64
+    Callback:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+    CreateSubmissionRequest:
+      type: object
+      required: [language, source]
+      properties:
+        source:
+          type: string
+        language:
+          type: string
+        input:
+          type: string
+          default: ""
+        expected_output:
+          type: ["string", "null"]
+        arguments:
+          type: array
+          items:
+            type: string
+        compiler_options:
+          type: array
+          items:
+            type: string
+        limits:
+          $ref: "#/components/schemas/Limits"
+        additional_files:
+          $ref: "#/components/schemas/AdditionalFiles"
+        callback:
+          $ref: "#/components/schemas/Callback"
+    CreatedSubmissionResponse:
+      type: object
+      required: [token, status]
+      properties:
+        token:
+          type: string
+        status:
+          $ref: "#/components/schemas/Status"
+    Submission:
+      type: object
+      required:
+        - token
+        - status
+      properties:
+        token:
+          type: string
+        language:
+          type: string
+        status:
+          $ref: "#/components/schemas/Status"
+        stdout:
+          type: ["string", "null"]
+        stderr:
+          type: ["string", "null"]
+        stdout_truncated:
+          type: boolean
+        stderr_truncated:
+          type: boolean
+        compile_output:
+          type: ["string", "null"]
+        compile_output_truncated:
+          type: boolean
+        message:
+          type: ["string", "null"]
+        exit_code:
+          type: ["integer", "null"]
+        exit_signal:
+          type: ["string", "null"]
+        time_ms:
+          type: ["integer", "null"]
+          format: int64
+        wall_time_ms:
+          type: ["integer", "null"]
+          format: int64
+        memory_kb:
+          type: ["integer", "null"]
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+        queued_at:
+          type: ["string", "null"]
+          format: date-time
+        started_at:
+          type: ["string", "null"]
+          format: date-time
+        finished_at:
+          type: ["string", "null"]
+          format: date-time
+        limits:
+          $ref: "#/components/schemas/Limits"
+        arguments:
+          type: array
+          items:
+            type: string
+        compiler_options:
+          type: array
+          items:
+            type: string
+    SubmissionListResponse:
+      type: object
+      required: [submissions, pagination]
+      properties:
+        submissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Submission"
+        pagination:
+          type: object
+          required: [limit, next_before]
+          properties:
+            limit:
+              type: integer
+            next_before:
+              type: ["string", "null"]
+    CallbackAttempt:
+      type: object
+      required: [id, attempt, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+        attempt:
+          type: integer
+        status_code:
+          type: ["integer", "null"]
+        error:
+          type: ["string", "null"]
+        created_at:
+          type: string
+          format: date-time
+    CallbackAttemptsResponse:
+      type: object
+      required: [submission_token, attempts]
+      properties:
+        submission_token:
+          type: string
+        attempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/CallbackAttempt"
+    PublicConfig:
+      type: object
+      additionalProperties: true
+    WorkersResponse:
+      type: object
+      additionalProperties: true

@@ -10,6 +10,7 @@ This project is in early development. The current implementation includes:
 - PostgreSQL-backed submission storage.
 - Embedded database migrations.
 - Embedded language catalog.
+- OpenAPI 3.1 contract with route drift checks.
 - Token-based API authentication.
 - In-memory queue for local development.
 - Direct local execution worker for development.
@@ -53,6 +54,8 @@ List languages:
 ```bash
 curl -H 'Authorization: Bearer dev-token' http://localhost:18080/v1/languages
 ```
+
+The default catalog includes `python-3.12`, `node-22`, `c-gcc`, `cpp-gcc`, `go-1.24`, `rust-1.88`, `java-21`, and `php-8.3`.
 
 Create a submission:
 
@@ -132,6 +135,12 @@ Submit a source file with language detection:
 ```bash
 scripts/submit.sh ./main.py
 scripts/submit.sh --url http://localhost:18082 --wait ./main.js
+scripts/submit.sh --wait ./main.c
+scripts/submit.sh --wait ./main.cpp
+scripts/submit.sh --wait ./main.go
+scripts/submit.sh --wait ./main.rs
+scripts/submit.sh --wait ./Main.java
+scripts/submit.sh --wait ./main.php
 scripts/submit.sh --additional-files-zip ./fixtures.zip ./main.py
 scripts/submit.sh --memory-kb 2097152 --max-processes 256 ./main.js
 scripts/submit.sh --runs 3 --wait ./main.py
@@ -139,6 +148,8 @@ scripts/submit.sh --callback-url http://127.0.0.1:9000/callback --wait ./main.py
 ```
 
 The helper defaults to `http://localhost:18080/v1/submissions` and `Authorization: Bearer dev-token`. Override those with `--url`, `BATASD_SUBMISSIONS_URL`, `--token`, or `BATASD_TOKEN`. Add callbacks with `--callback-url` or `BATASD_CALLBACK_URL`. Set per-submission limits with flags such as `--cpu-time-ms`, `--wall-time-ms`, `--memory-kb`, `--max-processes`, and `--max-output-kb`.
+
+Java submissions use a single source file named `Main.java` and should define class `Main`.
 
 Attach supporting files with:
 
@@ -156,6 +167,8 @@ Run tests:
 ```bash
 env GOCACHE=/private/tmp/codeexec-go-cache GOMODCACHE=/private/tmp/codeexec-go-mod go test ./...
 ```
+
+The OpenAPI 3.1 contract lives at `api/openapi.yaml`. The test suite checks that documented method/path pairs match the chi router.
 
 ## Configuration
 
@@ -186,7 +199,7 @@ Important defaults:
 - `MAX_LIMIT_MAX_PROCESSES=256`
 - `MAX_LIMIT_RUNS=20`
 
-The language catalog can set per-language default limits. `node-22` currently uses a larger memory and process profile than the global defaults because V8 reserves substantial virtual memory at startup under isolate. Submission-provided limits may lower or raise the per-request limits, but they cannot exceed `MAX_LIMIT_*` configuration values.
+The language catalog can set per-language default limits. `node-22`, `go-1.24`, `rust-1.88`, and `java-21` use larger memory or process profiles than the global defaults because their runtimes or compilers are heavier under sandbox limits. Submission-provided limits may lower or raise the per-request limits, but they cannot exceed `MAX_LIMIT_*` configuration values.
 
 When stdout or stderr exceeds `max_output_kb`, batasd keeps only the capped output, sets `stdout_truncated`, `stderr_truncated`, or `compile_output_truncated`, and stops the running command early.
 
