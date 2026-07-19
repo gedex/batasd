@@ -19,6 +19,7 @@ This project is in early development. The current implementation includes:
 - Startup recovery for unfinished queued/processing submissions.
 
 Sandbox drivers are being built incrementally. The current implementation supports the `direct` and Docker development drivers, plus an initial Linux `isolate` driver for production-style execution.
+The `direct` driver is development-only; it uses best-effort time/output limits and terminates the submitted process group on cancellation.
 
 ## Requirements
 

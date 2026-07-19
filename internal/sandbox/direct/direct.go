@@ -38,6 +38,7 @@ func (r *Runner) Run(ctx context.Context, command sandbox.Command) sandbox.Resul
 
 	start := time.Now()
 	cmd := exec.CommandContext(runCtx, command.Args[0], command.Args[1:]...)
+	configureCommand(cmd)
 	cmd.Dir = command.Dir
 	cmd.Stdin = strings.NewReader(command.Input)
 
