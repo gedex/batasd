@@ -97,6 +97,7 @@ scripts/submit.sh ./main.py
 scripts/submit.sh --url http://localhost:18082 --wait ./main.js
 scripts/submit.sh --additional-files-zip ./fixtures.zip ./main.py
 scripts/submit.sh --memory-kb 2097152 --max-processes 256 ./main.js
+scripts/submit.sh --runs 3 --wait ./main.py
 scripts/submit.sh --callback-url http://127.0.0.1:9000/callback --wait ./main.py
 ```
 
@@ -143,8 +144,11 @@ Important defaults:
 - `MAX_LIMIT_WALL_TIME_MS=30000`
 - `MAX_LIMIT_MEMORY_KB=2097152`
 - `MAX_LIMIT_MAX_PROCESSES=256`
+- `MAX_LIMIT_RUNS=20`
 
 The language catalog can set per-language default limits. `node-22` currently uses a larger memory and process profile than the global defaults because V8 reserves substantial virtual memory at startup under isolate. Submission-provided limits may lower or raise the per-request limits, but they cannot exceed `MAX_LIMIT_*` configuration values.
+
+When `limits.runs` is greater than 1, batasd compiles once, executes the run command repeatedly, and fails the submission on the first failed run. Successful repeated runs return the latest stdout/stderr, average `time_ms` and `wall_time_ms`, and maximum `memory_kb`.
 
 On startup, batasd resets unfinished `queued` or `processing` submissions back to `queued` and enqueues them for workers. This keeps the in-memory queue usable locally while preserving restart recovery through PostgreSQL.
 

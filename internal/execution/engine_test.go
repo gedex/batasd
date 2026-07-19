@@ -140,6 +140,90 @@ func TestEngineRunDoesNotTreatExit137AsMemoryLimit(t *testing.T) {
 	}
 }
 
+func TestEngineRunExecutesMultipleRuns(t *testing.T) {
+	exitCode := 0
+	calls := 0
+	engine := NewEngine(fakeRegistry{
+		"python-3.12": {
+			Slug:       "python-3.12",
+			SourceFile: "main.py",
+			Run:        []string{"python3", "main.py"},
+			Enabled:    true,
+		},
+	}, fakeRunner{
+		run: func(command sandbox.Command) sandbox.Result {
+			calls++
+			memoryKB := int64(calls * 100)
+			return sandbox.Result{
+				Stdout:     "hello\n",
+				ExitCode:   &exitCode,
+				TimeMS:     int64(calls * 10),
+				WallTimeMS: int64(calls * 15),
+				MemoryKB:   &memoryKB,
+			}
+		},
+	}, t.TempDir())
+
+	expected := "hello"
+	result := engine.Run(context.Background(), &submission.Submission{
+		Token:          "sub_test",
+		Language:       "python-3.12",
+		Source:         "print('hello')",
+		ExpectedOutput: &expected,
+		Limits:         submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1024, Runs: 3},
+	})
+	if result.StatusCode != status.Accepted {
+		t.Fatalf("expected accepted, got %s", result.StatusCode)
+	}
+	if calls != 3 {
+		t.Fatalf("calls = %d, want 3", calls)
+	}
+	if result.TimeMS == nil || *result.TimeMS != 20 {
+		t.Fatalf("TimeMS = %v, want 20", result.TimeMS)
+	}
+	if result.WallTimeMS == nil || *result.WallTimeMS != 30 {
+		t.Fatalf("WallTimeMS = %v, want 30", result.WallTimeMS)
+	}
+	if result.MemoryKB == nil || *result.MemoryKB != 300 {
+		t.Fatalf("MemoryKB = %v, want 300", result.MemoryKB)
+	}
+}
+
+func TestEngineRunStopsOnFailedRepeatedRun(t *testing.T) {
+	successCode := 0
+	failedCode := 1
+	calls := 0
+	engine := NewEngine(fakeRegistry{
+		"python-3.12": {
+			Slug:       "python-3.12",
+			SourceFile: "main.py",
+			Run:        []string{"python3", "main.py"},
+			Enabled:    true,
+		},
+	}, fakeRunner{
+		run: func(command sandbox.Command) sandbox.Result {
+			calls++
+			if calls == 2 {
+				return sandbox.Result{Stderr: "boom\n", ExitCode: &failedCode}
+			}
+			return sandbox.Result{Stdout: "hello\n", ExitCode: &successCode}
+		},
+	}, t.TempDir())
+
+	result := engine.Run(context.Background(), &submission.Submission{
+		Token:    "sub_test",
+		Language: "python-3.12",
+		Source:   "print('hello')",
+		Limits:   submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1024, Runs: 3},
+	})
+	if result.StatusCode != status.RuntimeError {
+		t.Fatalf("expected runtime error, got %s", result.StatusCode)
+	}
+	if calls != 2 {
+		t.Fatalf("calls = %d, want 2", calls)
+	}
+}
+
 func TestEngineRunExtractsAdditionalFiles(t *testing.T) {
 	exitCode := 0
 	var inspected bool

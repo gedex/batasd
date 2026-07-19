@@ -111,31 +111,82 @@ func (e *Engine) Run(ctx context.Context, sub *submission.Submission) submission
 		}
 	}
 
-	run := e.runner.Run(ctx, sandbox.Command{
-		Args:   appendArgs(lang.Run, sub.Arguments),
-		Dir:    dir,
-		Input:  sub.Input,
-		Limits: sub.Limits,
-	})
-
-	switch {
-	case run.OutputLimit:
-		return fromSandbox(status.OutputLimitExceeded, run, nil, "output limit exceeded")
-	case run.TimedOut:
-		return fromSandbox(status.TimeLimitExceeded, run, nil, "time limit exceeded")
-	case run.MemoryLimit:
-		return fromSandbox(status.MemoryLimitExceeded, run, nil, "memory limit exceeded")
-	case run.Err != nil:
-		return fromSandbox(status.SandboxError, run, nil, run.Err.Error())
-	case run.ExitCode != nil && *run.ExitCode != 0:
-		return fromSandbox(status.RuntimeError, run, nil, "program exited with non-zero status")
-	}
-
-	if sub.ExpectedOutput != nil && trimTrailingWhitespace(run.Stdout) != trimTrailingWhitespace(*sub.ExpectedOutput) {
-		return fromSandbox(status.WrongAnswer, run, nil, "output did not match expected output")
+	run, failed, ok := e.runSubmission(ctx, lang, sub, dir)
+	if !ok {
+		return failed
 	}
 
 	return fromSandbox(status.Accepted, run, nil, "")
+}
+
+func (e *Engine) runSubmission(ctx context.Context, lang language.Language, sub *submission.Submission, dir string) (sandbox.Result, submission.Result, bool) {
+	aggregate := runAggregate{}
+	for range runCount(sub.Limits) {
+		run := e.runner.Run(ctx, sandbox.Command{
+			Args:   appendArgs(lang.Run, sub.Arguments),
+			Dir:    dir,
+			Input:  sub.Input,
+			Limits: sub.Limits,
+		})
+
+		switch {
+		case run.OutputLimit:
+			return run, fromSandbox(status.OutputLimitExceeded, run, nil, "output limit exceeded"), false
+		case run.TimedOut:
+			return run, fromSandbox(status.TimeLimitExceeded, run, nil, "time limit exceeded"), false
+		case run.MemoryLimit:
+			return run, fromSandbox(status.MemoryLimitExceeded, run, nil, "memory limit exceeded"), false
+		case run.Err != nil:
+			return run, fromSandbox(status.SandboxError, run, nil, run.Err.Error()), false
+		case run.ExitCode != nil && *run.ExitCode != 0:
+			return run, fromSandbox(status.RuntimeError, run, nil, "program exited with non-zero status"), false
+		}
+
+		if sub.ExpectedOutput != nil && trimTrailingWhitespace(run.Stdout) != trimTrailingWhitespace(*sub.ExpectedOutput) {
+			return run, fromSandbox(status.WrongAnswer, run, nil, "output did not match expected output"), false
+		}
+
+		aggregate.Add(run)
+	}
+
+	return aggregate.Result(), submission.Result{}, true
+}
+
+func runCount(limits submission.Limits) int {
+	if limits.Runs <= 0 {
+		return 1
+	}
+	return limits.Runs
+}
+
+type runAggregate struct {
+	result     sandbox.Result
+	count      int
+	timeMS     int64
+	wallTimeMS int64
+	memoryKB   *int64
+}
+
+func (a *runAggregate) Add(run sandbox.Result) {
+	a.result = run
+	a.count++
+	a.timeMS += run.TimeMS
+	a.wallTimeMS += run.WallTimeMS
+	if run.MemoryKB != nil && (a.memoryKB == nil || *run.MemoryKB > *a.memoryKB) {
+		value := *run.MemoryKB
+		a.memoryKB = &value
+	}
+}
+
+func (a runAggregate) Result() sandbox.Result {
+	result := a.result
+	if a.count == 0 {
+		return result
+	}
+	result.TimeMS = a.timeMS / int64(a.count)
+	result.WallTimeMS = a.wallTimeMS / int64(a.count)
+	result.MemoryKB = a.memoryKB
+	return result
 }
 
 func extractAdditionalFiles(dir string, files *submission.AdditionalFiles) error {
