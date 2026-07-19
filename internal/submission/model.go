@@ -108,6 +108,7 @@ type Repository interface {
 	FindByToken(ctx context.Context, token string) (*Submission, error)
 	MarkProcessing(ctx context.Context, token string, startedAt time.Time) error
 	StoreResult(ctx context.Context, token string, result Result) error
+	RecoverUnfinished(ctx context.Context, recoveredAt time.Time) ([]string, error)
 	CreateCallbackAttempt(ctx context.Context, attempt CallbackAttempt) error
 	ListCallbackAttempts(ctx context.Context, token string) ([]CallbackAttempt, error)
 }

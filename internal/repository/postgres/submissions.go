@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/gedex/batasd/internal/status"
 	"github.com/gedex/batasd/internal/submission"
 )
 
@@ -250,6 +251,49 @@ func (r *SubmissionRepository) StoreResult(ctx context.Context, token string, re
 		return submission.ErrNotFound
 	}
 	return nil
+}
+
+// RecoverUnfinished resets unfinished submissions to queued and returns their tokens.
+func (r *SubmissionRepository) RecoverUnfinished(ctx context.Context, recoveredAt time.Time) ([]string, error) {
+	rows, err := r.db.Query(ctx, `WITH unfinished AS (
+		SELECT token
+		FROM submissions
+		WHERE status_code IN ($2, $3)
+		ORDER BY created_at ASC
+		FOR UPDATE
+	),
+	updated AS (
+		UPDATE submissions AS s
+		SET status_code = $4,
+			queued_at = COALESCE(s.queued_at, $1),
+			started_at = NULL,
+			updated_at = $1
+		FROM unfinished
+		WHERE s.token = unfinished.token
+		RETURNING s.token, s.created_at
+	)
+	SELECT token
+	FROM updated
+	ORDER BY created_at ASC`,
+		recoveredAt,
+		status.Queued,
+		status.Processing,
+		status.Queued,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tokens []string
+	for rows.Next() {
+		var token string
+		if err := rows.Scan(&token); err != nil {
+			return nil, err
+		}
+		tokens = append(tokens, token)
+	}
+	return tokens, rows.Err()
 }
 
 // CreateCallbackAttempt inserts one callback delivery attempt row.

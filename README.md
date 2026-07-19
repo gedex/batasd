@@ -16,6 +16,7 @@ This project is in early development. The current implementation includes:
 - Initial submission create and fetch endpoints.
 - Base64 zip `additional_files` extraction.
 - Completion callbacks with attempt logging.
+- Startup recovery for unfinished queued/processing submissions.
 
 Sandbox drivers are being built incrementally. The current implementation supports the `direct` and Docker development drivers, plus an initial Linux `isolate` driver for production-style execution.
 
@@ -143,6 +144,8 @@ Important defaults:
 - `MAX_LIMIT_MAX_PROCESSES=256`
 
 The language catalog can set per-language default limits. `node-22` currently uses a larger memory and process profile than the global defaults because V8 reserves substantial virtual memory at startup under isolate. Submission-provided limits may lower or raise the per-request limits, but they cannot exceed `MAX_LIMIT_*` configuration values.
+
+On startup, batasd resets unfinished `queued` or `processing` submissions back to `queued` and enqueues them for workers. This keeps the in-memory queue usable locally while preserving restart recovery through PostgreSQL.
 
 For Docker-backed local execution:
 

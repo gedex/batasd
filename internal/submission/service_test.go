@@ -293,6 +293,10 @@ func (r *fakeRepository) StoreResult(_ context.Context, _ string, _ Result) erro
 	return nil
 }
 
+func (r *fakeRepository) RecoverUnfinished(_ context.Context, _ time.Time) ([]string, error) {
+	return nil, nil
+}
+
 func (r *fakeRepository) CreateCallbackAttempt(_ context.Context, attempt CallbackAttempt) error {
 	r.attempts = append(r.attempts, attempt)
 	return nil

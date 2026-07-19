@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -108,6 +109,10 @@ func main() {
 			workerRunner.Run(ctx, id)
 		}(i)
 	}
+	if err := recoverUnfinishedSubmissions(ctx, logger, submissionRepo, queue); err != nil {
+		logger.Error("recover unfinished submissions", "error", err)
+		os.Exit(1)
+	}
 
 	submissionService := submission.NewService(submission.ServiceConfig{
 		Repository: submissionRepo,
@@ -168,4 +173,26 @@ func main() {
 	}
 
 	logger.Info("shutdown complete")
+}
+
+type unfinishedRecoverer interface {
+	RecoverUnfinished(ctx context.Context, recoveredAt time.Time) ([]string, error)
+}
+
+type submissionEnqueuer interface {
+	Enqueue(ctx context.Context, token string) error
+}
+
+func recoverUnfinishedSubmissions(ctx context.Context, logger *slog.Logger, repo unfinishedRecoverer, queue submissionEnqueuer) error {
+	tokens, err := repo.RecoverUnfinished(ctx, time.Now().UTC())
+	if err != nil {
+		return err
+	}
+	for _, token := range tokens {
+		if err := queue.Enqueue(ctx, token); err != nil {
+			return fmt.Errorf("enqueue recovered submission %s: %w", token, err)
+		}
+	}
+	logger.Info("recovered unfinished submissions", "count", len(tokens))
+	return nil
 }
