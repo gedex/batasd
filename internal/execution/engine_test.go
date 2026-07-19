@@ -119,6 +119,46 @@ func TestEngineRunMapsOutputLimitTruncation(t *testing.T) {
 	}
 }
 
+func TestEngineCompileOutputLimitSetsCompileOutputTruncated(t *testing.T) {
+	engine := NewEngine(fakeRegistry{
+		"c-test": {
+			Slug:       "c-test",
+			SourceFile: "main.c",
+			Compile:    []string{"compiler", "main.c"},
+			Run:        []string{"./main"},
+			Enabled:    true,
+		},
+	}, fakeRunner{
+		run: func(command sandbox.Command) sandbox.Result {
+			if command.Args[0] == "compiler" {
+				return sandbox.Result{
+					Stderr:      "compile output",
+					OutputLimit: true,
+					StderrLimit: true,
+				}
+			}
+			t.Fatalf("unexpected run command: %v", command.Args)
+			return sandbox.Result{}
+		},
+	}, t.TempDir())
+
+	result := engine.Run(context.Background(), &submission.Submission{
+		Token:    "sub_test",
+		Language: "c-test",
+		Source:   "int main() { return 0; }",
+		Limits:   submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1},
+	})
+	if result.StatusCode != status.OutputLimitExceeded {
+		t.Fatalf("expected output limit exceeded, got %s", result.StatusCode)
+	}
+	if !result.StderrTruncated {
+		t.Fatal("StderrTruncated = false, want true")
+	}
+	if !result.CompileOutputTruncated {
+		t.Fatal("CompileOutputTruncated = false, want true")
+	}
+}
+
 func TestEngineRunMapsMemoryLimitExceeded(t *testing.T) {
 	engine := NewEngine(fakeRegistry{
 		"python-3.12": {

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     stdout_truncated boolean NOT NULL DEFAULT false,
     stderr_truncated boolean NOT NULL DEFAULT false,
     compile_output text,
+    compile_output_truncated boolean NOT NULL DEFAULT false,
     message text,
     exit_code integer,
     exit_signal text,

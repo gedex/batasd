@@ -99,6 +99,7 @@ func (r *SubmissionRepository) FindByToken(ctx context.Context, token string) (*
 		stdout_truncated,
 		stderr_truncated,
 		compile_output,
+		compile_output_truncated,
 		message,
 		exit_code,
 		exit_signal,
@@ -120,6 +121,7 @@ func (r *SubmissionRepository) FindByToken(ctx context.Context, token string) (*
 	var stdoutTruncated pgtype.Bool
 	var stderrTruncated pgtype.Bool
 	var compileOutput pgtype.Text
+	var compileOutputTruncated pgtype.Bool
 	var message pgtype.Text
 	var exitSignal pgtype.Text
 	var exitCode pgtype.Int4
@@ -151,6 +153,7 @@ func (r *SubmissionRepository) FindByToken(ctx context.Context, token string) (*
 		&stdoutTruncated,
 		&stderrTruncated,
 		&compileOutput,
+		&compileOutputTruncated,
 		&message,
 		&exitCode,
 		&exitSignal,
@@ -177,6 +180,7 @@ func (r *SubmissionRepository) FindByToken(ctx context.Context, token string) (*
 	sub.StdoutTruncated = boolValue(stdoutTruncated)
 	sub.StderrTruncated = boolValue(stderrTruncated)
 	sub.CompileOutput = textPtr(compileOutput)
+	sub.CompileOutputTruncated = boolValue(compileOutputTruncated)
 	sub.Message = textPtr(message)
 	sub.ExitCode = intPtr(exitCode)
 	sub.ExitSignal = textPtr(exitSignal)
@@ -232,14 +236,15 @@ func (r *SubmissionRepository) StoreResult(ctx context.Context, token string, re
 			stdout_truncated = $5,
 			stderr_truncated = $6,
 			compile_output = $7,
-			message = $8,
-			exit_code = $9,
-			exit_signal = $10,
-			time_ms = $11,
-			wall_time_ms = $12,
-			memory_kb = $13,
-			finished_at = $14,
-			updated_at = $14
+			compile_output_truncated = $8,
+			message = $9,
+			exit_code = $10,
+			exit_signal = $11,
+			time_ms = $12,
+			wall_time_ms = $13,
+			memory_kb = $14,
+			finished_at = $15,
+			updated_at = $15
 		WHERE token = $1`,
 		token,
 		result.StatusCode,
@@ -248,6 +253,7 @@ func (r *SubmissionRepository) StoreResult(ctx context.Context, token string, re
 		result.StdoutTruncated,
 		result.StderrTruncated,
 		result.CompileOutput,
+		result.CompileOutputTruncated,
 		result.Message,
 		result.ExitCode,
 		result.ExitSignal,
