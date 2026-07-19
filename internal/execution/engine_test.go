@@ -86,6 +86,60 @@ func TestEngineRunMapsRuntimeError(t *testing.T) {
 	}
 }
 
+func TestEngineRunMapsMemoryLimitExceeded(t *testing.T) {
+	engine := NewEngine(fakeRegistry{
+		"python-3.12": {
+			Slug:       "python-3.12",
+			SourceFile: "main.py",
+			Run:        []string{"python3", "main.py"},
+			Enabled:    true,
+		},
+	}, fakeRunner{
+		result: sandbox.Result{
+			MemoryLimit: true,
+		},
+	}, t.TempDir())
+
+	result := engine.Run(context.Background(), &submission.Submission{
+		Token:    "sub_test",
+		Language: "python-3.12",
+		Source:   "bytearray(1024 * 1024 * 512)",
+		Limits:   submission.Limits{WallTimeMS: 1000, MemoryKB: 64000, MaxOutputKB: 1024},
+	})
+	if result.StatusCode != status.MemoryLimitExceeded {
+		t.Fatalf("expected memory limit exceeded, got %s", result.StatusCode)
+	}
+	if result.Message == nil || *result.Message != "memory limit exceeded" {
+		t.Fatalf("message = %v, want memory limit exceeded", result.Message)
+	}
+}
+
+func TestEngineRunDoesNotTreatExit137AsMemoryLimit(t *testing.T) {
+	exitCode := 137
+	engine := NewEngine(fakeRegistry{
+		"python-3.12": {
+			Slug:       "python-3.12",
+			SourceFile: "main.py",
+			Run:        []string{"python3", "main.py"},
+			Enabled:    true,
+		},
+	}, fakeRunner{
+		result: sandbox.Result{
+			ExitCode: &exitCode,
+		},
+	}, t.TempDir())
+
+	result := engine.Run(context.Background(), &submission.Submission{
+		Token:    "sub_test",
+		Language: "python-3.12",
+		Source:   "raise SystemExit(137)",
+		Limits:   submission.Limits{WallTimeMS: 1000, MemoryKB: 64000, MaxOutputKB: 1024},
+	})
+	if result.StatusCode != status.RuntimeError {
+		t.Fatalf("expected runtime error, got %s", result.StatusCode)
+	}
+}
+
 func TestEngineRunExtractsAdditionalFiles(t *testing.T) {
 	exitCode := 0
 	var inspected bool

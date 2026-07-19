@@ -100,6 +100,9 @@ func (e *Engine) Run(ctx context.Context, sub *submission.Submission) submission
 		if compile.TimedOut {
 			return fromSandbox(status.TimeLimitExceeded, compile, compileOutput(compile), "compile time limit exceeded")
 		}
+		if compile.MemoryLimit {
+			return fromSandbox(status.MemoryLimitExceeded, compile, compileOutput(compile), "memory limit exceeded")
+		}
 		if compile.Err != nil {
 			return fromSandbox(status.SandboxError, compile, compileOutput(compile), compile.Err.Error())
 		}
@@ -120,6 +123,8 @@ func (e *Engine) Run(ctx context.Context, sub *submission.Submission) submission
 		return fromSandbox(status.OutputLimitExceeded, run, nil, "output limit exceeded")
 	case run.TimedOut:
 		return fromSandbox(status.TimeLimitExceeded, run, nil, "time limit exceeded")
+	case run.MemoryLimit:
+		return fromSandbox(status.MemoryLimitExceeded, run, nil, "memory limit exceeded")
 	case run.Err != nil:
 		return fromSandbox(status.SandboxError, run, nil, run.Err.Error())
 	case run.ExitCode != nil && *run.ExitCode != 0:

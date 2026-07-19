@@ -345,6 +345,12 @@ func applyMeta(result *sandbox.Result, values meta) {
 	if message := strings.TrimSpace(values["message"]); message != "" {
 		result.Message = message
 	}
+	if metaFlag(values, "cg-oom-killed") {
+		result.MemoryLimit = true
+		if result.Message == "" {
+			result.Message = "memory limit exceeded"
+		}
+	}
 
 	switch values["status"] {
 	case "TO":
@@ -362,6 +368,19 @@ func applyMeta(result *sandbox.Result, values meta) {
 			exitCode := -1
 			result.ExitCode = &exitCode
 		}
+	}
+}
+
+func metaFlag(values meta, key string) bool {
+	value, ok := values[key]
+	if !ok {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "0", "false", "no":
+		return false
+	default:
+		return true
 	}
 }
 

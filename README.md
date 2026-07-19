@@ -96,10 +96,11 @@ Submit a source file with language detection:
 scripts/submit.sh ./main.py
 scripts/submit.sh --url http://localhost:18082 --wait ./main.js
 scripts/submit.sh --additional-files-zip ./fixtures.zip ./main.py
+scripts/submit.sh --memory-kb 2097152 --max-processes 256 ./main.js
 scripts/submit.sh --callback-url http://127.0.0.1:9000/callback --wait ./main.py
 ```
 
-The helper defaults to `http://localhost:18080/v1/submissions` and `Authorization: Bearer dev-token`. Override those with `--url`, `BATASD_SUBMISSIONS_URL`, `--token`, or `BATASD_TOKEN`. Add callbacks with `--callback-url` or `BATASD_CALLBACK_URL`.
+The helper defaults to `http://localhost:18080/v1/submissions` and `Authorization: Bearer dev-token`. Override those with `--url`, `BATASD_SUBMISSIONS_URL`, `--token`, or `BATASD_TOKEN`. Add callbacks with `--callback-url` or `BATASD_CALLBACK_URL`. Set per-submission limits with flags such as `--cpu-time-ms`, `--wall-time-ms`, `--memory-kb`, `--max-processes`, and `--max-output-kb`.
 
 Attach supporting files with:
 

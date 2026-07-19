@@ -26,6 +26,7 @@ type Result struct {
 	WallTimeMS  int64
 	MemoryKB    *int64
 	TimedOut    bool
+	MemoryLimit bool
 	OutputLimit bool
 	Err         error
 }

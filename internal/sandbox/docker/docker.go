@@ -58,6 +58,7 @@ func (r *Runner) Run(ctx context.Context, command sandbox.Command) sandbox.Resul
 	if err != nil {
 		return sandbox.Result{Err: err}
 	}
+	defer r.forceRemove(containerName)
 
 	runCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -109,9 +110,9 @@ func (r *Runner) Run(ctx context.Context, command sandbox.Command) sandbox.Resul
 		WallTimeMS:  wallTimeMS,
 		OutputLimit: stdout.Exceeded() || stderr.Exceeded(),
 	}
+	result.MemoryLimit = r.inspectOOM(containerName)
 
 	if runCtx.Err() == context.DeadlineExceeded {
-		r.forceRemove(containerName)
 		result.TimedOut = true
 		result.Message = "wall time limit exceeded"
 		return result
@@ -145,7 +146,6 @@ func (r *Runner) Run(ctx context.Context, command sandbox.Command) sandbox.Resul
 func (r *Runner) dockerArgs(containerName, hostDir string, command sandbox.Command) []string {
 	args := []string{
 		"run",
-		"--rm",
 		"--name", containerName,
 		"--workdir", workspaceDir,
 		"--volume", hostDir + ":" + workspaceDir + ":rw",
@@ -170,6 +170,21 @@ func (r *Runner) dockerArgs(containerName, hostDir string, command sandbox.Comma
 	args = append(args, r.image)
 	args = append(args, command.Args...)
 	return args
+}
+
+func (r *Runner) inspectOOM(containerName string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	output, err := exec.CommandContext(ctx, r.binary, "inspect", "--format", "{{.State.OOMKilled}}", containerName).Output()
+	if err != nil {
+		return false
+	}
+	return dockerOOMKilled(output)
+}
+
+func dockerOOMKilled(output []byte) bool {
+	return strings.EqualFold(strings.TrimSpace(string(output)), "true")
 }
 
 func (r *Runner) forceRemove(containerName string) {

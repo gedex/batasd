@@ -26,6 +26,9 @@ func TestDockerArgsDisableNetworkByDefault(t *testing.T) {
 			t.Fatalf("expected docker args to contain %q in %#v", want, args)
 		}
 	}
+	if strings.Contains(joined, "--rm") {
+		t.Fatalf("expected docker args to keep the container inspectable: %#v", args)
+	}
 }
 
 func TestDockerArgsAllowNetworkWhenRequested(t *testing.T) {
@@ -39,5 +42,14 @@ func TestDockerArgsAllowNetworkWhenRequested(t *testing.T) {
 	joined := strings.Join(args, "\x00")
 	if strings.Contains(joined, "--network\x00none") {
 		t.Fatalf("expected docker args not to disable network when requested: %#v", args)
+	}
+}
+
+func TestDockerOOMKilled(t *testing.T) {
+	if !dockerOOMKilled([]byte("true\n")) {
+		t.Fatal("dockerOOMKilled returned false for true output")
+	}
+	if dockerOOMKilled([]byte("false\n")) {
+		t.Fatal("dockerOOMKilled returned true for false output")
 	}
 }

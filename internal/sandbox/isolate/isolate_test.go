@@ -159,6 +159,18 @@ func TestApplyMetaMapsTimeout(t *testing.T) {
 	}
 }
 
+func TestApplyMetaMapsCGroupOOM(t *testing.T) {
+	result := sandbox.Result{}
+	applyMeta(&result, meta{"cg-oom-killed": "1"})
+
+	if !result.MemoryLimit {
+		t.Fatal("MemoryLimit = false, want true")
+	}
+	if result.Message != "memory limit exceeded" {
+		t.Fatalf("Message = %q, want memory limit exceeded", result.Message)
+	}
+}
+
 func TestReadMetaFile(t *testing.T) {
 	file, err := os.CreateTemp(t.TempDir(), "meta-*")
 	if err != nil {

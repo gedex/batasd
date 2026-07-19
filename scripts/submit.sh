@@ -16,6 +16,16 @@ Options:
   --expected-output VALUE     Expected stdout string.
   --expected-output-file PATH Read expected stdout string from file.
   --additional-files-zip PATH Attach a zip archive as additional_files.
+  --cpu-time-ms VALUE         Set limits.cpu_time_ms.
+  --cpu-extra-time-ms VALUE   Set limits.cpu_extra_time_ms.
+  --wall-time-ms VALUE        Set limits.wall_time_ms.
+  --memory-kb VALUE           Set limits.memory_kb.
+  --stack-kb VALUE            Set limits.stack_kb.
+  --max-processes VALUE       Set limits.max_processes.
+  --max-output-kb VALUE       Set limits.max_output_kb.
+  --max-file-kb VALUE         Set limits.max_file_kb.
+  --runs VALUE                Set limits.runs.
+  --network true|false        Set limits.network.
   --callback-url URL          Callback URL to POST the completed result to.
   --wait                      Poll until the submission leaves queued/processing.
   --interval SECONDS          Poll interval for --wait. Default: 1
@@ -31,6 +41,7 @@ Examples:
   scripts/submit.sh ./main.py
   scripts/submit.sh --url http://localhost:18082 ./main.js
   scripts/submit.sh --additional-files-zip ./fixtures.zip ./main.py
+  scripts/submit.sh --memory-kb 2097152 --max-processes 256 ./main.js
   scripts/submit.sh --callback-url http://127.0.0.1:9000/callback ./main.py
   scripts/submit.sh --wait --expected-output "hello" ./main.py
 USAGE
@@ -43,6 +54,20 @@ die() {
 
 need_command() {
   command -v "$1" >/dev/null 2>&1 || die "$1 is required"
+}
+
+require_integer() {
+  [[ "$2" =~ ^[0-9]+$ ]] || die "$1 must be a non-negative integer"
+}
+
+require_bool() {
+  case "$2" in
+    true | false)
+      ;;
+    *)
+      die "$1 must be true or false"
+      ;;
+  esac
 }
 
 normalize_submissions_url() {
@@ -136,6 +161,16 @@ expected_output=""
 expected_output_file=""
 expected_output_set=false
 additional_files_zip=""
+limit_cpu_time_ms=""
+limit_cpu_extra_time_ms=""
+limit_wall_time_ms=""
+limit_memory_kb=""
+limit_stack_kb=""
+limit_max_processes=""
+limit_max_output_kb=""
+limit_max_file_kb=""
+limit_runs=""
+limit_network=""
 callback_url="${BATASD_CALLBACK_URL:-}"
 wait=false
 interval="${BATASD_POLL_INTERVAL:-1}"
@@ -193,6 +228,66 @@ while [[ $# -gt 0 ]]; do
       [[ -f "$2" ]] || die "additional files zip not found: $2"
       [[ -r "$2" ]] || die "additional files zip is not readable: $2"
       additional_files_zip="$2"
+      shift 2
+      ;;
+    --cpu-time-ms)
+      [[ $# -ge 2 ]] || die "--cpu-time-ms requires a value"
+      require_integer "--cpu-time-ms" "$2"
+      limit_cpu_time_ms="$2"
+      shift 2
+      ;;
+    --cpu-extra-time-ms)
+      [[ $# -ge 2 ]] || die "--cpu-extra-time-ms requires a value"
+      require_integer "--cpu-extra-time-ms" "$2"
+      limit_cpu_extra_time_ms="$2"
+      shift 2
+      ;;
+    --wall-time-ms)
+      [[ $# -ge 2 ]] || die "--wall-time-ms requires a value"
+      require_integer "--wall-time-ms" "$2"
+      limit_wall_time_ms="$2"
+      shift 2
+      ;;
+    --memory-kb)
+      [[ $# -ge 2 ]] || die "--memory-kb requires a value"
+      require_integer "--memory-kb" "$2"
+      limit_memory_kb="$2"
+      shift 2
+      ;;
+    --stack-kb)
+      [[ $# -ge 2 ]] || die "--stack-kb requires a value"
+      require_integer "--stack-kb" "$2"
+      limit_stack_kb="$2"
+      shift 2
+      ;;
+    --max-processes)
+      [[ $# -ge 2 ]] || die "--max-processes requires a value"
+      require_integer "--max-processes" "$2"
+      limit_max_processes="$2"
+      shift 2
+      ;;
+    --max-output-kb)
+      [[ $# -ge 2 ]] || die "--max-output-kb requires a value"
+      require_integer "--max-output-kb" "$2"
+      limit_max_output_kb="$2"
+      shift 2
+      ;;
+    --max-file-kb)
+      [[ $# -ge 2 ]] || die "--max-file-kb requires a value"
+      require_integer "--max-file-kb" "$2"
+      limit_max_file_kb="$2"
+      shift 2
+      ;;
+    --runs)
+      [[ $# -ge 2 ]] || die "--runs requires a value"
+      require_integer "--runs" "$2"
+      limit_runs="$2"
+      shift 2
+      ;;
+    --network)
+      [[ $# -ge 2 ]] || die "--network requires a value"
+      require_bool "--network" "$2"
+      limit_network="$2"
       shift 2
       ;;
     --callback-url)
@@ -254,7 +349,20 @@ payload_path="$(mktemp)"
 response_path="$(mktemp)"
 trap 'rm -f "$payload_path" "$response_path"' EXIT
 
-BATASD_SUBMIT_INPUT="$input" BATASD_SUBMIT_EXPECTED_OUTPUT="$expected_output" BATASD_SUBMIT_CALLBACK_URL="$callback_url" python3 - \
+BATASD_SUBMIT_INPUT="$input" \
+  BATASD_SUBMIT_EXPECTED_OUTPUT="$expected_output" \
+  BATASD_SUBMIT_CALLBACK_URL="$callback_url" \
+  BATASD_SUBMIT_LIMIT_CPU_TIME_MS="$limit_cpu_time_ms" \
+  BATASD_SUBMIT_LIMIT_CPU_EXTRA_TIME_MS="$limit_cpu_extra_time_ms" \
+  BATASD_SUBMIT_LIMIT_WALL_TIME_MS="$limit_wall_time_ms" \
+  BATASD_SUBMIT_LIMIT_MEMORY_KB="$limit_memory_kb" \
+  BATASD_SUBMIT_LIMIT_STACK_KB="$limit_stack_kb" \
+  BATASD_SUBMIT_LIMIT_MAX_PROCESSES="$limit_max_processes" \
+  BATASD_SUBMIT_LIMIT_MAX_OUTPUT_KB="$limit_max_output_kb" \
+  BATASD_SUBMIT_LIMIT_MAX_FILE_KB="$limit_max_file_kb" \
+  BATASD_SUBMIT_LIMIT_RUNS="$limit_runs" \
+  BATASD_SUBMIT_LIMIT_NETWORK="$limit_network" \
+  python3 - \
   "$program_path" \
   "$language" \
   "$input_file" \
@@ -295,6 +403,29 @@ if additional_files_zip:
         "encoding": "zip_base64",
         "content": base64.b64encode(pathlib.Path(additional_files_zip).read_bytes()).decode("ascii"),
     }
+
+limits = {}
+for env_key, json_key in (
+    ("BATASD_SUBMIT_LIMIT_CPU_TIME_MS", "cpu_time_ms"),
+    ("BATASD_SUBMIT_LIMIT_CPU_EXTRA_TIME_MS", "cpu_extra_time_ms"),
+    ("BATASD_SUBMIT_LIMIT_WALL_TIME_MS", "wall_time_ms"),
+    ("BATASD_SUBMIT_LIMIT_MEMORY_KB", "memory_kb"),
+    ("BATASD_SUBMIT_LIMIT_STACK_KB", "stack_kb"),
+    ("BATASD_SUBMIT_LIMIT_MAX_PROCESSES", "max_processes"),
+    ("BATASD_SUBMIT_LIMIT_MAX_OUTPUT_KB", "max_output_kb"),
+    ("BATASD_SUBMIT_LIMIT_MAX_FILE_KB", "max_file_kb"),
+    ("BATASD_SUBMIT_LIMIT_RUNS", "runs"),
+):
+    value = os.environ.get(env_key, "")
+    if value:
+        limits[json_key] = int(value)
+
+network = os.environ.get("BATASD_SUBMIT_LIMIT_NETWORK", "")
+if network:
+    limits["network"] = network == "true"
+
+if limits:
+    payload["limits"] = limits
 
 callback_url = os.environ.get("BATASD_SUBMIT_CALLBACK_URL", "")
 if callback_url:
