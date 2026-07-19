@@ -4,6 +4,7 @@ package httpapi
 import (
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -13,6 +14,7 @@ import (
 	"github.com/gedex/batasd/internal/queue/memory"
 	"github.com/gedex/batasd/internal/status"
 	"github.com/gedex/batasd/internal/submission"
+	"github.com/gedex/batasd/internal/worker"
 )
 
 // Dependencies contains the services needed by the HTTP router.
@@ -22,6 +24,7 @@ type Dependencies struct {
 	Submissions *submission.Service
 	Languages   *language.Registry
 	Queue       *memory.Queue
+	Workers     *worker.Monitor
 }
 
 // NewRouter builds the HTTP handler tree for the public API.
@@ -76,6 +79,7 @@ func NewRouter(deps Dependencies) http.Handler {
 			writeJSON(w, http.StatusOK, map[string]any{
 				"configured_workers": deps.Config.Queue.Workers,
 				"queue":              deps.Queue.Stats(),
+				"workers":            deps.Workers.Snapshot(time.Now().UTC()),
 			})
 		})
 

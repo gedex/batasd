@@ -41,16 +41,18 @@ type Worker struct {
 	repo      Repository
 	engine    Engine
 	callbacks CallbackDispatcher
+	monitor   *Monitor
 }
 
 // New creates a worker using queue, repo, engine, and callbacks.
-func New(logger *slog.Logger, queue Queue, repo Repository, engine Engine, callbacks CallbackDispatcher) *Worker {
+func New(logger *slog.Logger, queue Queue, repo Repository, engine Engine, callbacks CallbackDispatcher, monitor *Monitor) *Worker {
 	return &Worker{
 		logger:    logger,
 		queue:     queue,
 		repo:      repo,
 		engine:    engine,
 		callbacks: callbacks,
+		monitor:   monitor,
 	}
 }
 
@@ -58,7 +60,9 @@ func New(logger *slog.Logger, queue Queue, repo Repository, engine Engine, callb
 func (w *Worker) Run(ctx context.Context, id int) {
 	logger := w.logger.With("worker_id", id)
 	logger.Info("worker started")
+	w.monitor.MarkIdle(id)
 	defer logger.Info("worker stopped")
+	defer w.monitor.MarkStopped(id)
 
 	for {
 		token, err := w.queue.Dequeue(ctx)
@@ -70,8 +74,10 @@ func (w *Worker) Run(ctx context.Context, id int) {
 			continue
 		}
 
+		w.monitor.MarkProcessing(id, token, time.Now().UTC())
 		w.process(ctx, logger, token)
 		w.queue.Done()
+		w.monitor.MarkIdle(id)
 	}
 }
 

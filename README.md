@@ -90,6 +90,12 @@ curl -H 'Authorization: Bearer dev-token' \
   http://localhost:18080/v1/submissions/sub_xxxxx/callbacks
 ```
 
+Inspect queue and worker activity:
+
+```bash
+curl -H 'Authorization: Bearer dev-token' http://localhost:18080/v1/workers
+```
+
 Submit a source file with language detection:
 
 ```bash

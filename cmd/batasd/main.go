@@ -100,7 +100,8 @@ func main() {
 
 	executionEngine := execution.NewEngine(languages, runner, cfg.Sandbox.WorkDir)
 	callbackDeliverer := callback.NewDeliverer(submissionRepo, cfg.Callback.Timeout)
-	workerRunner := worker.New(logger, queue, submissionRepo, executionEngine, callbackDeliverer)
+	workerMonitor := worker.NewMonitor(cfg.Queue.Workers)
+	workerRunner := worker.New(logger, queue, submissionRepo, executionEngine, callbackDeliverer, workerMonitor)
 	var workerWG sync.WaitGroup
 	for i := 1; i <= cfg.Queue.Workers; i++ {
 		workerWG.Add(1)
@@ -128,6 +129,7 @@ func main() {
 		Submissions: submissionService,
 		Languages:   languages,
 		Queue:       queue,
+		Workers:     workerMonitor,
 	})
 
 	server := &http.Server{
