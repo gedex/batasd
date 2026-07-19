@@ -33,6 +33,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
+	r.Use(maxBodyBytes(deps.Config.HTTP.MaxBodyBytes))
 
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
@@ -95,6 +96,9 @@ func NewRouter(deps Dependencies) http.Handler {
 func publicConfig(cfg config.Config) map[string]any {
 	return map[string]any{
 		"environment": cfg.AppEnv,
+		"http": map[string]any{
+			"max_body_bytes": cfg.HTTP.MaxBodyBytes,
+		},
 		"sandbox": map[string]any{
 			"driver":         cfg.Sandbox.Driver,
 			"docker_image":   cfg.Sandbox.DockerImage,

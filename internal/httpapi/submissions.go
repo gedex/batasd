@@ -19,7 +19,7 @@ type SubmissionHandler struct {
 func (h SubmissionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req submission.CreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_json", "request body must be valid JSON")
+		writeJSONDecodeError(w, err)
 		return
 	}
 
@@ -76,4 +76,13 @@ func (h SubmissionHandler) CallbackAttempts(w http.ResponseWriter, r *http.Reque
 	}
 
 	writeJSON(w, http.StatusOK, submission.ToCallbackAttemptsResponse(token, attempts))
+}
+
+func writeJSONDecodeError(w http.ResponseWriter, err error) {
+	var maxBytesErr *http.MaxBytesError
+	if errors.As(err, &maxBytesErr) {
+		writeError(w, http.StatusRequestEntityTooLarge, "request_too_large", "request body exceeds the configured limit")
+		return
+	}
+	writeError(w, http.StatusBadRequest, "invalid_json", "request body must be valid JSON")
 }

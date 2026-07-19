@@ -26,7 +26,8 @@ type Config struct {
 
 // HTTPConfig controls the public HTTP server.
 type HTTPConfig struct {
-	Addr string
+	Addr         string
+	MaxBodyBytes int64
 }
 
 // DatabaseConfig controls PostgreSQL connectivity and migration behavior.
@@ -73,7 +74,8 @@ func Load() (Config, error) {
 	cfg := Config{
 		AppEnv: envString("APP_ENV", "local"),
 		HTTP: HTTPConfig{
-			Addr: envString("HTTP_ADDR", ":18080"),
+			Addr:         envString("HTTP_ADDR", ":18080"),
+			MaxBodyBytes: envInt64("HTTP_MAX_BODY_BYTES", 25*1024*1024),
 		},
 		Database: DatabaseConfig{
 			URL:           envString("DATABASE_URL", "postgres://sandbox:sandbox@localhost:5432/sandbox?sslmode=disable"),
@@ -137,6 +139,9 @@ func Load() (Config, error) {
 func (c Config) Validate() error {
 	if c.AppEnv == "" {
 		return errors.New("APP_ENV cannot be empty")
+	}
+	if c.HTTP.MaxBodyBytes < 1 {
+		return errors.New("HTTP_MAX_BODY_BYTES must be at least 1")
 	}
 
 	switch c.Sandbox.Driver {

@@ -138,6 +138,7 @@ cp .env.example .env
 Important defaults:
 
 - `HTTP_ADDR=:18080`
+- `HTTP_MAX_BODY_BYTES=26214400`
 - `DATABASE_URL=postgres://sandbox:sandbox@localhost:5432/sandbox?sslmode=disable`
 - `AUTHN_TOKENS=dev-token`
 - `SANDBOX_DRIVER=direct`
