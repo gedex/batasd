@@ -154,6 +154,8 @@ Important defaults:
 
 The language catalog can set per-language default limits. `node-22` currently uses a larger memory and process profile than the global defaults because V8 reserves substantial virtual memory at startup under isolate. Submission-provided limits may lower or raise the per-request limits, but they cannot exceed `MAX_LIMIT_*` configuration values.
 
+When stdout or stderr exceeds `max_output_kb`, batasd keeps only the capped output and stops the running command early.
+
 When `limits.runs` is greater than 1, batasd compiles once, executes the run command repeatedly, and fails the submission on the first failed run. Successful repeated runs return the latest stdout/stderr, average `time_ms` and `wall_time_ms`, and maximum `memory_kb`.
 
 On startup, batasd resets unfinished `queued` or `processing` submissions back to `queued` and enqueues them for workers. This keeps the in-memory queue usable locally while preserving restart recovery through PostgreSQL.

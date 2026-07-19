@@ -77,12 +77,8 @@ func (r *Runner) Run(ctx context.Context, command sandbox.Command) sandbox.Resul
 		return sandbox.Result{Err: err}
 	}
 
-	maxOutputBytes := command.Limits.MaxOutputKB * 1024
-	if maxOutputBytes <= 0 {
-		maxOutputBytes = 1024 * 1024
-	}
-	stdout := newLimitBuffer(maxOutputBytes)
-	stderr := newLimitBuffer(maxOutputBytes)
+	stdout := sandbox.NewOutputBuffer(sandbox.MaxOutputBytes(command.Limits), cancel)
+	stderr := sandbox.NewOutputBuffer(sandbox.MaxOutputBytes(command.Limits), cancel)
 
 	if err := cmd.Start(); err != nil {
 		return sandbox.Result{Err: err}
@@ -199,48 +195,4 @@ func randomContainerName() (string, error) {
 		return "", err
 	}
 	return "batasd-" + hex.EncodeToString(bytes[:]), nil
-}
-
-type limitBuffer struct {
-	mu       sync.Mutex
-	buf      []byte
-	limit    int64
-	exceeded bool
-}
-
-func newLimitBuffer(limit int64) *limitBuffer {
-	return &limitBuffer{limit: limit}
-}
-
-func (b *limitBuffer) Write(p []byte) (int, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	available := int(b.limit) - len(b.buf)
-	if available > 0 {
-		if len(p) <= available {
-			b.buf = append(b.buf, p...)
-		} else {
-			b.buf = append(b.buf, p[:available]...)
-			b.exceeded = true
-		}
-	} else if len(p) > 0 {
-		b.exceeded = true
-	}
-
-	return len(p), nil
-}
-
-func (b *limitBuffer) String() string {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	return string(b.buf)
-}
-
-func (b *limitBuffer) Exceeded() bool {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	return b.exceeded
 }
