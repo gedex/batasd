@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+
+case "$(uname -m)" in
+	aarch64 | arm64)
+		exec javac -J-XX:UseSVE=0 "$@"
+		;;
+	*)
+		exec javac "$@"
+		;;
+esac

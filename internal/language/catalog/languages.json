@@ -44,8 +44,8 @@
     "name": "Java",
     "version": "21",
     "source_file": "Main.java",
-    "compile": ["javac", "Main.java"],
-    "run": ["java", "Main"],
+    "compile": ["batasd-javac", "Main.java"],
+    "run": ["batasd-java", "Main"],
     "default_limits": {
       "wall_time_ms": 20000,
       "memory_kb": 1048576,

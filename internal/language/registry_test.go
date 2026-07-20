@@ -64,3 +64,21 @@ func TestLoadCatalogIncludesNodeDefaultLimits(t *testing.T) {
 		t.Fatalf("MaxProcesses = %d, want 256", node.DefaultLimits.MaxProcesses)
 	}
 }
+
+func TestLoadCatalogUsesJavaRunnerWrappers(t *testing.T) {
+	registry, err := LoadCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	java, ok := registry.Get("java-21")
+	if !ok {
+		t.Fatal("java-21 language not found")
+	}
+	if got := java.Compile[0]; got != "batasd-javac" {
+		t.Fatalf("Compile[0] = %q, want batasd-javac", got)
+	}
+	if got := java.Run[0]; got != "batasd-java" {
+		t.Fatalf("Run[0] = %q, want batasd-java", got)
+	}
+}

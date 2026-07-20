@@ -9,6 +9,8 @@ COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=go /usr/local/go /usr/local/go
 COPY --from=rust /usr/local/cargo /usr/local/cargo
 COPY --from=rust /usr/local/rustup /usr/local/rustup
+COPY docker/runner/batasd-java /usr/local/bin/batasd-java
+COPY docker/runner/batasd-javac /usr/local/bin/batasd-javac
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CARGO_HOME=/usr/local/cargo
@@ -28,6 +30,7 @@ RUN apt-get update \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 	&& ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+	&& chmod 0755 /usr/local/bin/batasd-java /usr/local/bin/batasd-javac \
 	&& groupadd --gid 10001 runner \
 	&& useradd --uid 10001 --gid 10001 --create-home --shell /usr/sbin/nologin runner \
 	&& mkdir -p /workspace \

@@ -144,6 +144,7 @@ func (r *Runner) Run(ctx context.Context, command sandbox.Command) sandbox.Resul
 func (r *Runner) dockerArgs(containerName, hostDir string, command sandbox.Command) []string {
 	args := []string{
 		"run",
+		"--interactive",
 		"--name", containerName,
 		"--workdir", workspaceDir,
 		"--volume", hostDir + ":" + workspaceDir + ":rw",
@@ -151,6 +152,9 @@ func (r *Runner) dockerArgs(containerName, hostDir string, command sandbox.Comma
 		"--cap-drop", "ALL",
 		"--security-opt", "no-new-privileges",
 		"--read-only",
+		"--env", "CGO_ENABLED=0",
+		"--env", "GOCACHE=/workspace/.cache/go-build",
+		"--env", "GOMODCACHE=/workspace/.cache/go-mod",
 		"--env", "PYTHONDONTWRITEBYTECODE=1",
 	}
 

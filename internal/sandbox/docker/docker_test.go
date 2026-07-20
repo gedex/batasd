@@ -21,7 +21,16 @@ func TestDockerArgsDisableNetworkByDefault(t *testing.T) {
 	})
 
 	joined := strings.Join(args, "\x00")
-	for _, want := range []string{"--network\x00none", "--memory\x00128000k", "--pids-limit\x0060", "batasd-runner:local\x00python3\x00main.py"} {
+	for _, want := range []string{
+		"--interactive",
+		"--env\x00CGO_ENABLED=0",
+		"--env\x00GOCACHE=/workspace/.cache/go-build",
+		"--env\x00GOMODCACHE=/workspace/.cache/go-mod",
+		"--network\x00none",
+		"--memory\x00128000k",
+		"--pids-limit\x0060",
+		"batasd-runner:local\x00python3\x00main.py",
+	} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("expected docker args to contain %q in %#v", want, args)
 		}
