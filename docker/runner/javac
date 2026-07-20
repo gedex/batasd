@@ -3,9 +3,9 @@ set -eu
 
 case "$(uname -m)" in
 	aarch64 | arm64)
-		exec javac -J-XX:UseSVE=0 "$@"
+		exec /usr/bin/javac -J-XX:UseSVE=0 "$@"
 		;;
 	*)
-		exec javac "$@"
+		exec /usr/bin/javac "$@"
 		;;
 esac

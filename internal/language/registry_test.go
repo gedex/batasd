@@ -76,7 +76,7 @@ func TestLoadCatalogIncludesNodeDefaultLimits(t *testing.T) {
 	}
 }
 
-func TestLoadCatalogUsesJavaRunnerWrappers(t *testing.T) {
+func TestLoadCatalogUsesPortableJavaCommands(t *testing.T) {
 	registry, err := LoadCatalog()
 	if err != nil {
 		t.Fatal(err)
@@ -86,11 +86,11 @@ func TestLoadCatalogUsesJavaRunnerWrappers(t *testing.T) {
 	if !ok {
 		t.Fatal("java 21 language not found")
 	}
-	if got := java.Compile[0]; got != "batasd-javac" {
-		t.Fatalf("Compile[0] = %q, want batasd-javac", got)
+	if got := java.Compile[0]; got != "javac" {
+		t.Fatalf("Compile[0] = %q, want javac", got)
 	}
-	if got := java.Run[0]; got != "batasd-java" {
-		t.Fatalf("Run[0] = %q, want batasd-java", got)
+	if got := java.Run[0]; got != "java" {
+		t.Fatalf("Run[0] = %q, want java", got)
 	}
 }
 
