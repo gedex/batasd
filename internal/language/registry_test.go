@@ -1,6 +1,9 @@
 package language
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestLoadCatalogIncludesExpectedLanguages(t *testing.T) {
 	registry, err := LoadCatalog()
@@ -140,6 +143,30 @@ func TestLoadCatalogGoAllowsColdCompileCPU(t *testing.T) {
 	}
 	if goLang.DefaultLimits.CPUExtraMS != 3000 {
 		t.Fatalf("CPUExtraMS = %d, want 3000", goLang.DefaultLimits.CPUExtraMS)
+	}
+}
+
+func TestLoadCatalogGoCompileWrapperPassesCompilerOptionsAsArgs(t *testing.T) {
+	registry, err := LoadCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	goLang, ok := registry.Resolve("go", "")
+	if !ok {
+		t.Fatal("go language not found")
+	}
+	if len(goLang.Compile) < 4 {
+		t.Fatalf("Compile = %v, want sh -c wrapper", goLang.Compile)
+	}
+	if goLang.Compile[0] != "sh" || goLang.Compile[1] != "-c" {
+		t.Fatalf("Compile prefix = %v, want sh -c", goLang.Compile[:2])
+	}
+	if !strings.Contains(goLang.Compile[2], "\"$@\"") {
+		t.Fatalf("Compile script = %q, want quoted positional args", goLang.Compile[2])
+	}
+	if goLang.Compile[3] != "batasd-go-build" {
+		t.Fatalf("Compile[3] = %q, want batasd-go-build", goLang.Compile[3])
 	}
 }
 

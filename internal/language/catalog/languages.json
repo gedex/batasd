@@ -47,7 +47,7 @@
       {
         "version": "1.24",
         "source_file": "main.go",
-        "compile": ["go", "build", "-o", "main", "main.go"],
+        "compile": ["sh", "-c", "go build -o main main.go \"$@\" 2>.batasd-go-build.err; status=$?; if [ \"$status\" -eq 0 ]; then rm -f .batasd-go-build.err; exit 0; fi; if [ -x main ] && grep -q \"go: failed to trim cache: Lock .*function not implemented\" .batasd-go-build.err; then rm -f .batasd-go-build.err; exit 0; fi; cat .batasd-go-build.err >&2; exit \"$status\"", "batasd-go-build"],
         "run": ["./main"],
         "default_limits": {
           "cpu_time_ms": 15000,
