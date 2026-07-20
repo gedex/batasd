@@ -35,7 +35,7 @@ func TestRunArgsUseDefaultIsolatedNetwork(t *testing.T) {
 		"--meta", "/tmp/meta",
 		"--chdir", "/box",
 		"--dir", "/box=/tmp/work:rw",
-		"--env", "PATH=/usr/local/bin:/usr/bin:/bin",
+		"--env", "PATH=/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin",
 		"--env", "HOME=/box",
 		"--env", "CGO_ENABLED=0",
 		"--env", "CARGO_HOME=/usr/local/cargo",

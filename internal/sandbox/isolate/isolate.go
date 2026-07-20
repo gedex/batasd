@@ -231,7 +231,7 @@ func (r *Runner) runArgs(boxID int, hostDir, metaPath string, command sandbox.Co
 		"--meta", metaPath,
 		"--chdir", boxDir,
 		"--dir", boxDir+"="+hostDir+":rw",
-		"--env", "PATH=/usr/local/bin:/usr/bin:/bin",
+		"--env", "PATH=/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin",
 		"--env", "HOME="+boxDir,
 		"--env", "CGO_ENABLED=0",
 		"--env", "CARGO_HOME=/usr/local/cargo",
