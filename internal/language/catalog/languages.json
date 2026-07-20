@@ -11,7 +11,8 @@
         "run": ["./main"],
         "default_limits": {
           "memory_kb": 262144,
-          "max_processes": 64
+          "max_processes": 64,
+          "max_file_kb": 10240
         },
         "enabled": true
       }
@@ -30,7 +31,8 @@
         "run": ["./main"],
         "default_limits": {
           "memory_kb": 262144,
-          "max_processes": 64
+          "max_processes": 64,
+          "max_file_kb": 10240
         },
         "enabled": true
       }
@@ -50,7 +52,8 @@
         "default_limits": {
           "wall_time_ms": 20000,
           "memory_kb": 1048576,
-          "max_processes": 128
+          "max_processes": 128,
+          "max_file_kb": 10240
         },
         "enabled": true
       }
@@ -70,7 +73,8 @@
         "default_limits": {
           "wall_time_ms": 20000,
           "memory_kb": 1048576,
-          "max_processes": 128
+          "max_processes": 128,
+          "max_file_kb": 10240
         },
         "enabled": true
       }
@@ -143,7 +147,8 @@
         "default_limits": {
           "wall_time_ms": 20000,
           "memory_kb": 1048576,
-          "max_processes": 128
+          "max_processes": 128,
+          "max_file_kb": 10240
         },
         "enabled": true
       }

@@ -94,6 +94,28 @@ func TestLoadCatalogUsesPortableJavaCommands(t *testing.T) {
 	}
 }
 
+func TestLoadCatalogCompiledLanguagesUseLargerFileLimit(t *testing.T) {
+	registry, err := LoadCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, slug := range []string{"c", "cpp", "go", "java", "rust"} {
+		t.Run(slug, func(t *testing.T) {
+			lang, ok := registry.Resolve(slug, "")
+			if !ok {
+				t.Fatalf("%s language not found", slug)
+			}
+			if lang.DefaultLimits == nil {
+				t.Fatal("default limits are nil")
+			}
+			if lang.DefaultLimits.MaxFileKB != 10240 {
+				t.Fatalf("MaxFileKB = %d, want 10240", lang.DefaultLimits.MaxFileKB)
+			}
+		})
+	}
+}
+
 func TestResolveUsesShortSlugsAndVersions(t *testing.T) {
 	registry, err := LoadCatalog()
 	if err != nil {
