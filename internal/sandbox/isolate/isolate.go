@@ -234,9 +234,11 @@ func (r *Runner) runArgs(boxID int, hostDir, metaPath string, command sandbox.Co
 		"--env", "PATH=/usr/local/bin:/usr/bin:/bin",
 		"--env", "HOME="+boxDir,
 		"--env", "CGO_ENABLED=0",
+		"--env", "CARGO_HOME=/usr/local/cargo",
 		"--env", "GOCACHE="+boxDir+"/.cache/go-build",
 		"--env", "GOMODCACHE="+boxDir+"/.cache/go-mod",
 		"--env", "PYTHONDONTWRITEBYTECODE=1",
+		"--env", "RUSTUP_HOME=/usr/local/rustup",
 	)
 
 	if command.Limits.CPUTimeMS > 0 {
@@ -279,6 +281,10 @@ func resolveExecutable(args []string) ([]string, error) {
 	}
 
 	path, err := exec.LookPath(resolved[0])
+	if err != nil {
+		return nil, err
+	}
+	path, err = filepath.EvalSymlinks(path)
 	if err != nil {
 		return nil, err
 	}
