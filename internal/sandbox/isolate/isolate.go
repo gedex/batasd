@@ -232,6 +232,10 @@ func (r *Runner) runArgs(boxID int, hostDir, metaPath string, command sandbox.Co
 		"--chdir", boxDir,
 		"--dir", boxDir+"="+hostDir+":rw",
 		"--env", "PATH=/usr/local/bin:/usr/bin:/bin",
+		"--env", "HOME="+boxDir,
+		"--env", "CGO_ENABLED=0",
+		"--env", "GOCACHE="+boxDir+"/.cache/go-build",
+		"--env", "GOMODCACHE="+boxDir+"/.cache/go-mod",
 		"--env", "PYTHONDONTWRITEBYTECODE=1",
 	)
 
