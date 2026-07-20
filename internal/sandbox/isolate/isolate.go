@@ -284,10 +284,6 @@ func resolveExecutable(args []string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	path, err = filepath.EvalSymlinks(path)
-	if err != nil {
-		return nil, err
-	}
 	resolved[0] = path
 	return resolved, nil
 }

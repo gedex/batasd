@@ -2,7 +2,6 @@ package isolate
 
 import (
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -151,33 +150,6 @@ func TestResolveExecutableFindsPathExecutable(t *testing.T) {
 	}
 	if got[1] != "version" {
 		t.Fatalf("arg = %q, want version", got[1])
-	}
-}
-
-func TestResolveExecutableResolvesSymlinks(t *testing.T) {
-	dir := t.TempDir()
-	target := dir + "/real-tool"
-	link := dir + "/tool"
-	if err := os.WriteFile(target, []byte("#!/bin/sh\n"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Symlink(target, link); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", dir)
-
-	got, err := resolveExecutable([]string{"tool", "arg"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantTarget, err := filepath.EvalSymlinks(target)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	want := []string{wantTarget, "arg"}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("args = %v, want %v", got, want)
 	}
 }
 

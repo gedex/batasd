@@ -89,8 +89,14 @@ func TestLoadCatalogUsesPortableJavaCommands(t *testing.T) {
 	if got := java.Compile[0]; got != "javac" {
 		t.Fatalf("Compile[0] = %q, want javac", got)
 	}
+	if got := java.Compile[1]; got != "-J-Xmx256m" {
+		t.Fatalf("Compile[1] = %q, want -J-Xmx256m", got)
+	}
 	if got := java.Run[0]; got != "java" {
 		t.Fatalf("Run[0] = %q, want java", got)
+	}
+	if got := java.Run[1]; got != "-Xmx256m" {
+		t.Fatalf("Run[1] = %q, want -Xmx256m", got)
 	}
 }
 
@@ -113,6 +119,27 @@ func TestLoadCatalogCompiledLanguagesUseLargerFileLimit(t *testing.T) {
 				t.Fatalf("MaxFileKB = %d, want 10240", lang.DefaultLimits.MaxFileKB)
 			}
 		})
+	}
+}
+
+func TestLoadCatalogGoAllowsColdCompileCPU(t *testing.T) {
+	registry, err := LoadCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	goLang, ok := registry.Resolve("go", "")
+	if !ok {
+		t.Fatal("go language not found")
+	}
+	if goLang.DefaultLimits == nil {
+		t.Fatal("go default limits are nil")
+	}
+	if goLang.DefaultLimits.CPUTimeMS != 10000 {
+		t.Fatalf("CPUTimeMS = %d, want 10000", goLang.DefaultLimits.CPUTimeMS)
+	}
+	if goLang.DefaultLimits.CPUExtraMS != 3000 {
+		t.Fatalf("CPUExtraMS = %d, want 3000", goLang.DefaultLimits.CPUExtraMS)
 	}
 }
 
