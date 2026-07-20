@@ -106,12 +106,13 @@ func TestDeliverSkipsSubmissionWithoutCallbackURL(t *testing.T) {
 
 func testSubmission(callbackURL string) *submission.Submission {
 	return &submission.Submission{
-		Token:       "sub_test",
-		Language:    "python-3.12",
-		CallbackURL: &callbackURL,
-		StatusCode:  status.Processing,
-		CreatedAt:   time.Now().UTC(),
-		UpdatedAt:   time.Now().UTC(),
+		Token:           "sub_test",
+		Language:        "python",
+		LanguageVersion: "3.12",
+		CallbackURL:     &callbackURL,
+		StatusCode:      status.Processing,
+		CreatedAt:       time.Now().UTC(),
+		UpdatedAt:       time.Now().UTC(),
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 type Response struct {
 	Token                  string        `json:"token"`
 	Language               string        `json:"language,omitempty"`
+	LanguageVersion        string        `json:"language_version,omitempty"`
 	Status                 status.Status `json:"status"`
 	Stdout                 *string       `json:"stdout"`
 	Stderr                 *string       `json:"stderr"`
@@ -64,6 +65,7 @@ func ValidResponseField(field string) bool {
 	switch field {
 	case "token",
 		"language",
+		"language_version",
 		"status",
 		"stdout",
 		"stderr",
@@ -95,6 +97,7 @@ func ToResponse(sub *Submission) Response {
 	return Response{
 		Token:                  sub.Token,
 		Language:               sub.Language,
+		LanguageVersion:        sub.LanguageVersion,
 		Status:                 status.Describe(sub.StatusCode),
 		Stdout:                 sub.Stdout,
 		Stderr:                 sub.Stderr,
@@ -127,6 +130,8 @@ func SelectResponseFields(response Response, fields []string) map[string]any {
 			out[field] = response.Token
 		case "language":
 			out[field] = response.Language
+		case "language_version":
+			out[field] = response.LanguageVersion
 		case "status":
 			out[field] = response.Status
 		case "stdout":

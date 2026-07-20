@@ -55,7 +55,7 @@ List languages:
 curl -H 'Authorization: Bearer dev-token' http://localhost:18080/v1/languages
 ```
 
-The default catalog includes `python-3.12`, `node-22`, `c-gcc`, `cpp-gcc`, `go-1.24`, `rust-1.88`, `java-21`, and `php-8.3`.
+The default catalog includes `python`, `node`, `c`, `cpp`, `go`, `rust`, `java`, and `php`. Each language has one or more versions and a `default_version`.
 
 Create a submission:
 
@@ -63,7 +63,7 @@ Create a submission:
 curl -X POST http://localhost:18080/v1/submissions \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer dev-token' \
-  -d '{"language":"python-3.12","source":"print(\"hello\")","input":"","expected_output":"hello"}'
+  -d '{"language":"python","source":"print(\"hello\")","input":"","expected_output":"hello"}'
 ```
 
 Create a submission and wait briefly for completion:
@@ -72,8 +72,10 @@ Create a submission and wait briefly for completion:
 curl -X POST 'http://localhost:18080/v1/submissions?wait=true' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer dev-token' \
-  -d '{"language":"python-3.12","source":"print(\"hello\")","input":"","expected_output":"hello"}'
+  -d '{"language":"python","source":"print(\"hello\")","input":"","expected_output":"hello"}'
 ```
+
+`language_version` is optional. When omitted, batasd uses the catalog `default_version` for that language.
 
 `wait=true` is bounded by `SUBMISSION_WAIT_TIMEOUT_MS` and polls every `SUBMISSION_WAIT_POLL_INTERVAL_MS`. If the wait times out before the submission reaches a terminal status, the API returns `202 Accepted` with the latest queued or processing state.
 
@@ -96,7 +98,7 @@ List recent submissions:
 
 ```bash
 curl -H 'Authorization: Bearer dev-token' \
-  'http://localhost:18080/v1/submissions?limit=20&status=accepted&language=python-3.12'
+  'http://localhost:18080/v1/submissions?limit=20&status=accepted&language=python'
 ```
 
 If the response includes `pagination.next_before`, pass that token as `before` to fetch the next page.
@@ -112,7 +114,7 @@ scripts/callback-receiver.sh
 curl -X POST http://localhost:18080/v1/submissions \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer dev-token' \
-  -d '{"language":"python-3.12","source":"print(\"hello\")","expected_output":"hello","callback":{"url":"http://127.0.0.1:9000/callback"}}'
+  -d '{"language":"python","source":"print(\"hello\")","expected_output":"hello","callback":{"url":"http://127.0.0.1:9000/callback"}}'
 ```
 
 The callback receiver gets a `POST` with the same JSON shape returned by `GET /v1/submissions/{token}` after execution finishes. Delivery is attempted once in the MVP and recorded in `callback_attempts`.
@@ -145,9 +147,10 @@ scripts/submit.sh --additional-files-zip ./fixtures.zip ./main.py
 scripts/submit.sh --memory-kb 2097152 --max-processes 256 ./main.js
 scripts/submit.sh --runs 3 --wait ./main.py
 scripts/submit.sh --callback-url http://127.0.0.1:9000/callback --wait ./main.py
+scripts/submit.sh --language-version 3.12 --wait ./main.py
 ```
 
-The helper defaults to `http://localhost:18080/v1/submissions` and `Authorization: Bearer dev-token`. Override those with `--url`, `BATASD_SUBMISSIONS_URL`, `--token`, or `BATASD_TOKEN`. Add callbacks with `--callback-url` or `BATASD_CALLBACK_URL`. Set per-submission limits with flags such as `--cpu-time-ms`, `--wall-time-ms`, `--memory-kb`, `--max-processes`, and `--max-output-kb`.
+The helper defaults to `http://localhost:18080/v1/submissions` and `Authorization: Bearer dev-token`. Override those with `--url`, `BATASD_SUBMISSIONS_URL`, `--token`, or `BATASD_TOKEN`. Override catalog defaults with `--language-version` or `BATASD_LANGUAGE_VERSION`. Add callbacks with `--callback-url` or `BATASD_CALLBACK_URL`. Set per-submission limits with flags such as `--cpu-time-ms`, `--wall-time-ms`, `--memory-kb`, `--max-processes`, and `--max-output-kb`.
 
 Java submissions use a single source file named `Main.java` and should define class `Main`.
 
@@ -199,7 +202,7 @@ Important defaults:
 - `MAX_LIMIT_MAX_PROCESSES=256`
 - `MAX_LIMIT_RUNS=20`
 
-The language catalog can set per-language default limits. `node-22`, `go-1.24`, `rust-1.88`, and `java-21` use larger memory or process profiles than the global defaults because their runtimes or compilers are heavier under sandbox limits. Submission-provided limits may lower or raise the per-request limits, but they cannot exceed `MAX_LIMIT_*` configuration values.
+The language catalog can set per-language-version default limits. `node`, `go`, `rust`, and `java` currently use larger memory or process profiles than the global defaults because their runtimes or compilers are heavier under sandbox limits. Submission-provided limits may lower or raise the per-request limits, but they cannot exceed `MAX_LIMIT_*` configuration values.
 
 When stdout or stderr exceeds `max_output_kb`, batasd keeps only the capped output, sets `stdout_truncated`, `stderr_truncated`, or `compile_output_truncated`, and stops the running command early.
 

@@ -251,7 +251,7 @@ components:
       required: true
       schema:
         type: string
-      example: python-3.12
+      example: python
     ListLimit:
       name: limit
       in: query
@@ -388,12 +388,24 @@ components:
           type: integer
     Language:
       type: object
-      required: [slug, name, version, source_file, compile, run, enabled]
+      required: [slug, name, default_version, versions, enabled]
       properties:
         slug:
           type: string
         name:
           type: string
+        default_version:
+          type: string
+        versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/LanguageVersion"
+        enabled:
+          type: boolean
+    LanguageVersion:
+      type: object
+      required: [version, source_file, compile, run, enabled]
+      properties:
         version:
           type: string
         source_file:
@@ -435,6 +447,9 @@ components:
           type: string
         language:
           type: string
+        language_version:
+          type: string
+          description: Optional catalog version. Defaults to the language default_version.
         input:
           type: string
           default: ""
@@ -471,6 +486,8 @@ components:
         token:
           type: string
         language:
+          type: string
+        language_version:
           type: string
         status:
           $ref: "#/components/schemas/Status"

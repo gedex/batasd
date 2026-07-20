@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS submissions (
     token text PRIMARY KEY,
     language_slug text NOT NULL,
+    language_version text NOT NULL,
     source text NOT NULL,
     input text NOT NULL DEFAULT '',
     expected_output text,

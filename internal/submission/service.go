@@ -22,6 +22,7 @@ const (
 // LanguageRegistry resolves enabled languages by slug.
 type LanguageRegistry interface {
 	Get(slug string) (language.Language, bool)
+	Resolve(slug, version string) (language.Runtime, bool)
 }
 
 // ServiceConfig provides dependencies for a Service.
@@ -58,9 +59,17 @@ func (s *Service) Create(ctx context.Context, req CreateRequest) (*Submission, e
 	if strings.TrimSpace(req.Source) == "" {
 		return nil, ValidationError{Field: "source", Message: "source is required"}
 	}
-	lang, ok := s.languages.Get(req.Language)
-	if !ok {
+	languageSlug := strings.TrimSpace(req.Language)
+	if languageSlug == "" {
+		return nil, ValidationError{Field: "language", Message: "language is required"}
+	}
+	languageVersion := strings.TrimSpace(req.LanguageVersion)
+	if _, ok := s.languages.Get(languageSlug); !ok {
 		return nil, ValidationError{Field: "language", Message: "unsupported language"}
+	}
+	lang, ok := s.languages.Resolve(languageSlug, languageVersion)
+	if !ok {
+		return nil, ValidationError{Field: "language_version", Message: "unsupported language version"}
 	}
 	if req.Callback != nil && strings.TrimSpace(req.Callback.URL) != "" {
 		if err := validateCallbackURL(req.Callback.URL); err != nil {
@@ -98,7 +107,8 @@ func (s *Service) Create(ctx context.Context, req CreateRequest) (*Submission, e
 
 	sub := &Submission{
 		Token:           token,
-		Language:        req.Language,
+		Language:        lang.Slug,
+		LanguageVersion: lang.Version,
 		Source:          req.Source,
 		Input:           req.Input,
 		ExpectedOutput:  req.ExpectedOutput,

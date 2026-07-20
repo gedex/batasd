@@ -30,7 +30,7 @@ const (
 
 // LanguageRegistry resolves enabled languages by slug.
 type LanguageRegistry interface {
-	Get(slug string) (language.Language, bool)
+	Resolve(slug, version string) (language.Runtime, bool)
 }
 
 // Engine executes submissions using a language catalog and sandbox runner.
@@ -53,7 +53,7 @@ func NewEngine(languages LanguageRegistry, runner sandbox.Runner, workDir string
 func (e *Engine) Run(ctx context.Context, sub *submission.Submission) submission.Result {
 	finishedAt := time.Now().UTC()
 
-	lang, ok := e.languages.Get(sub.Language)
+	lang, ok := e.languages.Resolve(sub.Language, sub.LanguageVersion)
 	if !ok {
 		return result(status.InternalError, finishedAt, withMessage("unsupported language"))
 	}
@@ -119,7 +119,7 @@ func (e *Engine) Run(ctx context.Context, sub *submission.Submission) submission
 	return fromSandbox(status.Accepted, run, nil, "")
 }
 
-func (e *Engine) runSubmission(ctx context.Context, lang language.Language, sub *submission.Submission, dir string) (sandbox.Result, submission.Result, bool) {
+func (e *Engine) runSubmission(ctx context.Context, lang language.Runtime, sub *submission.Submission, dir string) (sandbox.Result, submission.Result, bool) {
 	aggregate := runAggregate{}
 	for range runCount(sub.Limits) {
 		run := e.runner.Run(ctx, sandbox.Command{

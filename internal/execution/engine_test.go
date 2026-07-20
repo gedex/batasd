@@ -18,11 +18,10 @@ import (
 func TestEngineRunMapsAcceptedAndWrongAnswer(t *testing.T) {
 	exitCode := 0
 	registry := fakeRegistry{
-		"python-3.12": {
-			Slug:       "python-3.12",
+		"python": {
+			Slug:       "python",
 			SourceFile: "main.py",
 			Run:        []string{"python3", "main.py"},
-			Enabled:    true,
 		},
 	}
 	runner := fakeRunner{
@@ -37,7 +36,7 @@ func TestEngineRunMapsAcceptedAndWrongAnswer(t *testing.T) {
 	expected := "hello"
 	accepted := engine.Run(context.Background(), &submission.Submission{
 		Token:          "sub_test",
-		Language:       "python-3.12",
+		Language:       "python",
 		Source:         "print('hello')",
 		ExpectedOutput: &expected,
 		Limits:         submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1024},
@@ -49,7 +48,7 @@ func TestEngineRunMapsAcceptedAndWrongAnswer(t *testing.T) {
 	wrongExpected := "bye"
 	wrongAnswer := engine.Run(context.Background(), &submission.Submission{
 		Token:          "sub_test",
-		Language:       "python-3.12",
+		Language:       "python",
 		Source:         "print('hello')",
 		ExpectedOutput: &wrongExpected,
 		Limits:         submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1024},
@@ -62,11 +61,10 @@ func TestEngineRunMapsAcceptedAndWrongAnswer(t *testing.T) {
 func TestEngineRunMapsRuntimeError(t *testing.T) {
 	exitCode := 1
 	engine := NewEngine(fakeRegistry{
-		"python-3.12": {
-			Slug:       "python-3.12",
+		"python": {
+			Slug:       "python",
 			SourceFile: "main.py",
 			Run:        []string{"python3", "main.py"},
-			Enabled:    true,
 		},
 	}, fakeRunner{
 		result: sandbox.Result{
@@ -77,7 +75,7 @@ func TestEngineRunMapsRuntimeError(t *testing.T) {
 
 	result := engine.Run(context.Background(), &submission.Submission{
 		Token:    "sub_test",
-		Language: "python-3.12",
+		Language: "python",
 		Source:   "raise Exception('boom')",
 		Limits:   submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1024},
 	})
@@ -88,11 +86,10 @@ func TestEngineRunMapsRuntimeError(t *testing.T) {
 
 func TestEngineRunMapsOutputLimitTruncation(t *testing.T) {
 	engine := NewEngine(fakeRegistry{
-		"python-3.12": {
-			Slug:       "python-3.12",
+		"python": {
+			Slug:       "python",
 			SourceFile: "main.py",
 			Run:        []string{"python3", "main.py"},
-			Enabled:    true,
 		},
 	}, fakeRunner{
 		result: sandbox.Result{
@@ -104,7 +101,7 @@ func TestEngineRunMapsOutputLimitTruncation(t *testing.T) {
 
 	result := engine.Run(context.Background(), &submission.Submission{
 		Token:    "sub_test",
-		Language: "python-3.12",
+		Language: "python",
 		Source:   "print('too much')",
 		Limits:   submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1},
 	})
@@ -126,7 +123,6 @@ func TestEngineCompileOutputLimitSetsCompileOutputTruncated(t *testing.T) {
 			SourceFile: "main.c",
 			Compile:    []string{"compiler", "main.c"},
 			Run:        []string{"./main"},
-			Enabled:    true,
 		},
 	}, fakeRunner{
 		run: func(command sandbox.Command) sandbox.Result {
@@ -161,11 +157,10 @@ func TestEngineCompileOutputLimitSetsCompileOutputTruncated(t *testing.T) {
 
 func TestEngineRunMapsMemoryLimitExceeded(t *testing.T) {
 	engine := NewEngine(fakeRegistry{
-		"python-3.12": {
-			Slug:       "python-3.12",
+		"python": {
+			Slug:       "python",
 			SourceFile: "main.py",
 			Run:        []string{"python3", "main.py"},
-			Enabled:    true,
 		},
 	}, fakeRunner{
 		result: sandbox.Result{
@@ -175,7 +170,7 @@ func TestEngineRunMapsMemoryLimitExceeded(t *testing.T) {
 
 	result := engine.Run(context.Background(), &submission.Submission{
 		Token:    "sub_test",
-		Language: "python-3.12",
+		Language: "python",
 		Source:   "bytearray(1024 * 1024 * 512)",
 		Limits:   submission.Limits{WallTimeMS: 1000, MemoryKB: 64000, MaxOutputKB: 1024},
 	})
@@ -190,11 +185,10 @@ func TestEngineRunMapsMemoryLimitExceeded(t *testing.T) {
 func TestEngineRunDoesNotTreatExit137AsMemoryLimit(t *testing.T) {
 	exitCode := 137
 	engine := NewEngine(fakeRegistry{
-		"python-3.12": {
-			Slug:       "python-3.12",
+		"python": {
+			Slug:       "python",
 			SourceFile: "main.py",
 			Run:        []string{"python3", "main.py"},
-			Enabled:    true,
 		},
 	}, fakeRunner{
 		result: sandbox.Result{
@@ -204,7 +198,7 @@ func TestEngineRunDoesNotTreatExit137AsMemoryLimit(t *testing.T) {
 
 	result := engine.Run(context.Background(), &submission.Submission{
 		Token:    "sub_test",
-		Language: "python-3.12",
+		Language: "python",
 		Source:   "raise SystemExit(137)",
 		Limits:   submission.Limits{WallTimeMS: 1000, MemoryKB: 64000, MaxOutputKB: 1024},
 	})
@@ -217,11 +211,10 @@ func TestEngineRunExecutesMultipleRuns(t *testing.T) {
 	exitCode := 0
 	calls := 0
 	engine := NewEngine(fakeRegistry{
-		"python-3.12": {
-			Slug:       "python-3.12",
+		"python": {
+			Slug:       "python",
 			SourceFile: "main.py",
 			Run:        []string{"python3", "main.py"},
-			Enabled:    true,
 		},
 	}, fakeRunner{
 		run: func(command sandbox.Command) sandbox.Result {
@@ -240,7 +233,7 @@ func TestEngineRunExecutesMultipleRuns(t *testing.T) {
 	expected := "hello"
 	result := engine.Run(context.Background(), &submission.Submission{
 		Token:          "sub_test",
-		Language:       "python-3.12",
+		Language:       "python",
 		Source:         "print('hello')",
 		ExpectedOutput: &expected,
 		Limits:         submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1024, Runs: 3},
@@ -267,11 +260,10 @@ func TestEngineRunStopsOnFailedRepeatedRun(t *testing.T) {
 	failedCode := 1
 	calls := 0
 	engine := NewEngine(fakeRegistry{
-		"python-3.12": {
-			Slug:       "python-3.12",
+		"python": {
+			Slug:       "python",
 			SourceFile: "main.py",
 			Run:        []string{"python3", "main.py"},
-			Enabled:    true,
 		},
 	}, fakeRunner{
 		run: func(command sandbox.Command) sandbox.Result {
@@ -285,7 +277,7 @@ func TestEngineRunStopsOnFailedRepeatedRun(t *testing.T) {
 
 	result := engine.Run(context.Background(), &submission.Submission{
 		Token:    "sub_test",
-		Language: "python-3.12",
+		Language: "python",
 		Source:   "print('hello')",
 		Limits:   submission.Limits{WallTimeMS: 1000, MaxOutputKB: 1024, Runs: 3},
 	})
@@ -301,11 +293,10 @@ func TestEngineRunExtractsAdditionalFiles(t *testing.T) {
 	exitCode := 0
 	var inspected bool
 	engine := NewEngine(fakeRegistry{
-		"python-3.12": {
-			Slug:       "python-3.12",
+		"python": {
+			Slug:       "python",
 			SourceFile: "main.py",
 			Run:        []string{"python3", "main.py"},
-			Enabled:    true,
 		},
 	}, fakeRunner{
 		run: func(command sandbox.Command) sandbox.Result {
@@ -327,7 +318,7 @@ func TestEngineRunExtractsAdditionalFiles(t *testing.T) {
 	expected := "hello"
 	result := engine.Run(context.Background(), &submission.Submission{
 		Token:          "sub_test",
-		Language:       "python-3.12",
+		Language:       "python",
 		Source:         "print('hello')",
 		ExpectedOutput: &expected,
 		AdditionalFiles: &submission.AdditionalFiles{
@@ -348,17 +339,16 @@ func TestEngineRunExtractsAdditionalFiles(t *testing.T) {
 func TestEngineRunRejectsAdditionalFilesPathTraversal(t *testing.T) {
 	workDir := t.TempDir()
 	engine := NewEngine(fakeRegistry{
-		"python-3.12": {
-			Slug:       "python-3.12",
+		"python": {
+			Slug:       "python",
 			SourceFile: "main.py",
 			Run:        []string{"python3", "main.py"},
-			Enabled:    true,
 		},
 	}, fakeRunner{}, workDir)
 
 	result := engine.Run(context.Background(), &submission.Submission{
 		Token:    "sub_test",
-		Language: "python-3.12",
+		Language: "python",
 		Source:   "print('hello')",
 		AdditionalFiles: &submission.AdditionalFiles{
 			Encoding: "zip_base64",
@@ -377,17 +367,16 @@ func TestEngineRunRejectsAdditionalFilesPathTraversal(t *testing.T) {
 
 func TestEngineRunRejectsAdditionalFilesSourceOverwrite(t *testing.T) {
 	engine := NewEngine(fakeRegistry{
-		"python-3.12": {
-			Slug:       "python-3.12",
+		"python": {
+			Slug:       "python",
 			SourceFile: "main.py",
 			Run:        []string{"python3", "main.py"},
-			Enabled:    true,
 		},
 	}, fakeRunner{}, t.TempDir())
 
 	result := engine.Run(context.Background(), &submission.Submission{
 		Token:    "sub_test",
-		Language: "python-3.12",
+		Language: "python",
 		Source:   "print('hello')",
 		AdditionalFiles: &submission.AdditionalFiles{
 			Encoding: "zip_base64",
@@ -421,10 +410,19 @@ func zipBase64(t *testing.T, files map[string]string) string {
 	return base64.StdEncoding.EncodeToString(buf.Bytes())
 }
 
-type fakeRegistry map[string]language.Language
+type fakeRegistry map[string]language.Runtime
 
-func (r fakeRegistry) Get(slug string) (language.Language, bool) {
+func (r fakeRegistry) Resolve(slug, version string) (language.Runtime, bool) {
 	lang, ok := r[slug]
+	if !ok {
+		return language.Runtime{}, false
+	}
+	if lang.Version == "" {
+		lang.Version = "test"
+	}
+	if version != "" && version != lang.Version {
+		return language.Runtime{}, false
+	}
 	return lang, ok
 }
 

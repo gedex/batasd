@@ -11,6 +11,7 @@ Options:
                               Default: http://localhost:18080/v1/submissions
   --token TOKEN               Bearer token. Default: BATASD_TOKEN or dev-token
   --language SLUG             Override language detection.
+  --language-version VERSION  Override the catalog default language version.
   --input VALUE               Stdin string for the submission.
   --input-file PATH           Read stdin string from file.
   --expected-output VALUE     Expected stdout string.
@@ -34,6 +35,7 @@ Options:
 Environment:
   BATASD_SUBMISSIONS_URL      Overrides the submissions endpoint.
   BATASD_TOKEN                Overrides the bearer token.
+  BATASD_LANGUAGE_VERSION     Adds language_version to the submission payload.
   BATASD_CALLBACK_URL         Adds a callback URL to the submission payload.
   BATASD_POLL_INTERVAL        Overrides the --wait poll interval.
 
@@ -91,28 +93,28 @@ detect_language() {
 
   case "$ext" in
     c)
-      printf 'c-gcc\n'
+      printf 'c\n'
       ;;
     cc | cpp | cxx)
-      printf 'cpp-gcc\n'
+      printf 'cpp\n'
       ;;
     go)
-      printf 'go-1.24\n'
+      printf 'go\n'
       ;;
     java)
-      printf 'java-21\n'
+      printf 'java\n'
       ;;
     php)
-      printf 'php-8.3\n'
+      printf 'php\n'
       ;;
     py)
-      printf 'python-3.12\n'
+      printf 'python\n'
       ;;
     rs)
-      printf 'rust-1.88\n'
+      printf 'rust\n'
       ;;
     js | mjs | cjs)
-      printf 'node-22\n'
+      printf 'node\n'
       ;;
     *)
       die "cannot detect language from .$ext; pass --language"
@@ -173,6 +175,7 @@ request() {
 submissions_url="${BATASD_SUBMISSIONS_URL:-http://localhost:18080/v1/submissions}"
 auth_token="${BATASD_TOKEN:-dev-token}"
 language=""
+language_version="${BATASD_LANGUAGE_VERSION:-}"
 input=""
 input_file=""
 expected_output=""
@@ -209,6 +212,11 @@ while [[ $# -gt 0 ]]; do
     --language)
       [[ $# -ge 2 ]] || die "--language requires a value"
       language="$2"
+      shift 2
+      ;;
+    --language-version)
+      [[ $# -ge 2 ]] || die "--language-version requires a value"
+      language_version="$2"
       shift 2
       ;;
     --input)
@@ -368,6 +376,7 @@ response_path="$(mktemp)"
 trap 'rm -f "$payload_path" "$response_path"' EXIT
 
 BATASD_SUBMIT_INPUT="$input" \
+  BATASD_SUBMIT_LANGUAGE_VERSION="$language_version" \
   BATASD_SUBMIT_EXPECTED_OUTPUT="$expected_output" \
   BATASD_SUBMIT_CALLBACK_URL="$callback_url" \
   BATASD_SUBMIT_LIMIT_CPU_TIME_MS="$limit_cpu_time_ms" \
@@ -409,6 +418,10 @@ payload = {
     "source": program_path.read_text(),
     "input": stdin,
 }
+
+language_version = os.environ.get("BATASD_SUBMIT_LANGUAGE_VERSION", "")
+if language_version:
+    payload["language_version"] = language_version
 
 if expected_output_set:
     expected_output = os.environ.get("BATASD_SUBMIT_EXPECTED_OUTPUT", "")

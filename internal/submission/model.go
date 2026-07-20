@@ -39,6 +39,7 @@ type Callback struct {
 type CreateRequest struct {
 	Source          string           `json:"source"`
 	Language        string           `json:"language"`
+	LanguageVersion string           `json:"language_version"`
 	Input           string           `json:"input"`
 	ExpectedOutput  *string          `json:"expected_output"`
 	Arguments       []string         `json:"arguments"`
@@ -67,6 +68,7 @@ type ListResult struct {
 type Submission struct {
 	Token                  string
 	Language               string
+	LanguageVersion        string
 	Source                 string
 	Input                  string
 	ExpectedOutput         *string

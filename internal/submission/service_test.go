@@ -16,13 +16,13 @@ func TestCreateAppliesLanguageDefaultLimits(t *testing.T) {
 		Repository: repo,
 		Queue:      queue,
 		Languages: fakeLanguages{
-			"node-22": {
-				Slug: "node-22",
+			"node": {
+				Slug:    "node",
+				Version: "22",
 				DefaultLimits: &language.LimitOverrides{
 					MemoryKB:     2097152,
 					MaxProcesses: 256,
 				},
-				Enabled: true,
 			},
 		},
 		Limits: defaultTestLimits(),
@@ -33,7 +33,7 @@ func TestCreateAppliesLanguageDefaultLimits(t *testing.T) {
 	})
 
 	sub, err := service.Create(context.Background(), CreateRequest{
-		Language: "node-22",
+		Language: "node",
 		Source:   "console.log('ok')",
 	})
 	if err != nil {
@@ -49,6 +49,12 @@ func TestCreateAppliesLanguageDefaultLimits(t *testing.T) {
 	if sub.Limits.CPUTimeMS != 5000 {
 		t.Fatalf("CPUTimeMS = %d, want 5000", sub.Limits.CPUTimeMS)
 	}
+	if sub.Language != "node" {
+		t.Fatalf("Language = %q, want node", sub.Language)
+	}
+	if sub.LanguageVersion != "22" {
+		t.Fatalf("LanguageVersion = %q, want 22", sub.LanguageVersion)
+	}
 	if repo.created == nil || repo.created.Token != sub.Token {
 		t.Fatal("submission was not persisted")
 	}
@@ -62,20 +68,20 @@ func TestCreateRequestLimitsOverrideLanguageDefaultLimits(t *testing.T) {
 		Repository: &fakeRepository{},
 		Queue:      &fakeQueue{},
 		Languages: fakeLanguages{
-			"node-22": {
-				Slug: "node-22",
+			"node": {
+				Slug:    "node",
+				Version: "22",
 				DefaultLimits: &language.LimitOverrides{
 					MemoryKB:     2097152,
 					MaxProcesses: 256,
 				},
-				Enabled: true,
 			},
 		},
 		Limits: defaultTestLimits(),
 	})
 
 	sub, err := service.Create(context.Background(), CreateRequest{
-		Language: "node-22",
+		Language: "node",
 		Source:   "console.log('ok')",
 		Limits: &Limits{
 			MemoryKB:     3145728,
@@ -94,14 +100,70 @@ func TestCreateRequestLimitsOverrideLanguageDefaultLimits(t *testing.T) {
 	}
 }
 
+func TestCreateAcceptsExplicitLanguageVersion(t *testing.T) {
+	service := NewService(ServiceConfig{
+		Repository: &fakeRepository{},
+		Queue:      &fakeQueue{},
+		Languages: fakeLanguages{
+			"python": {
+				Slug:    "python",
+				Version: "3.12",
+			},
+		},
+		Limits: defaultTestLimits(),
+	})
+
+	sub, err := service.Create(context.Background(), CreateRequest{
+		Language:        "python",
+		LanguageVersion: "3.12",
+		Source:          "print('ok')",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sub.LanguageVersion != "3.12" {
+		t.Fatalf("LanguageVersion = %q, want 3.12", sub.LanguageVersion)
+	}
+}
+
+func TestCreateRejectsUnsupportedLanguageVersion(t *testing.T) {
+	service := NewService(ServiceConfig{
+		Repository: &fakeRepository{},
+		Queue:      &fakeQueue{},
+		Languages: fakeLanguages{
+			"python": {
+				Slug:    "python",
+				Version: "3.12",
+			},
+		},
+		Limits: defaultTestLimits(),
+	})
+
+	_, err := service.Create(context.Background(), CreateRequest{
+		Language:        "python",
+		LanguageVersion: "3.13",
+		Source:          "print('ok')",
+	})
+	if err == nil {
+		t.Fatal("Create returned nil error, want validation error")
+	}
+	validation, ok := err.(ValidationError)
+	if !ok {
+		t.Fatalf("err = %T, want ValidationError", err)
+	}
+	if validation.Field != "language_version" {
+		t.Fatalf("field = %q, want language_version", validation.Field)
+	}
+}
+
 func TestCreateRejectsRequestLimitsAboveMaxLimits(t *testing.T) {
 	service := NewService(ServiceConfig{
 		Repository: &fakeRepository{},
 		Queue:      &fakeQueue{},
 		Languages: fakeLanguages{
-			"python-3.12": {
-				Slug:    "python-3.12",
-				Enabled: true,
+			"python": {
+				Slug:    "python",
+				Version: "3.12",
 			},
 		},
 		Limits:    defaultTestLimits(),
@@ -109,7 +171,7 @@ func TestCreateRejectsRequestLimitsAboveMaxLimits(t *testing.T) {
 	})
 
 	_, err := service.Create(context.Background(), CreateRequest{
-		Language: "python-3.12",
+		Language: "python",
 		Source:   "print('ok')",
 		Limits: &Limits{
 			MemoryKB: defaultTestMaxLimits().MemoryKB + 1,
@@ -133,16 +195,16 @@ func TestCreateUsesGlobalLimitsWhenLanguageHasNoDefaultLimits(t *testing.T) {
 		Repository: &fakeRepository{},
 		Queue:      &fakeQueue{},
 		Languages: fakeLanguages{
-			"python-3.12": {
-				Slug:    "python-3.12",
-				Enabled: true,
+			"python": {
+				Slug:    "python",
+				Version: "3.12",
 			},
 		},
 		Limits: defaultTestLimits(),
 	})
 
 	sub, err := service.Create(context.Background(), CreateRequest{
-		Language: "python-3.12",
+		Language: "python",
 		Source:   "print('ok')",
 	})
 	if err != nil {
@@ -162,16 +224,16 @@ func TestCreateRejectsUnsupportedAdditionalFilesEncoding(t *testing.T) {
 		Repository: &fakeRepository{},
 		Queue:      &fakeQueue{},
 		Languages: fakeLanguages{
-			"python-3.12": {
-				Slug:    "python-3.12",
-				Enabled: true,
+			"python": {
+				Slug:    "python",
+				Version: "3.12",
 			},
 		},
 		Limits: defaultTestLimits(),
 	})
 
 	_, err := service.Create(context.Background(), CreateRequest{
-		Language: "python-3.12",
+		Language: "python",
 		Source:   "print('ok')",
 		AdditionalFiles: &AdditionalFiles{
 			Encoding: "plain",
@@ -273,9 +335,9 @@ func TestListValidatesAndPassesFilters(t *testing.T) {
 		Repository: repo,
 		Queue:      &fakeQueue{},
 		Languages: fakeLanguages{
-			"python-3.12": {
-				Slug:    "python-3.12",
-				Enabled: true,
+			"python": {
+				Slug:    "python",
+				Version: "3.12",
 			},
 		},
 		Limits: defaultTestLimits(),
@@ -285,7 +347,7 @@ func TestListValidatesAndPassesFilters(t *testing.T) {
 		Limit:       2,
 		BeforeToken: " sub_cursor ",
 		StatusCode:  status.Accepted,
-		Language:    "python-3.12",
+		Language:    "python",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -299,8 +361,8 @@ func TestListValidatesAndPassesFilters(t *testing.T) {
 	if repo.listQuery.StatusCode != status.Accepted {
 		t.Fatalf("status = %q, want %q", repo.listQuery.StatusCode, status.Accepted)
 	}
-	if repo.listQuery.Language != "python-3.12" {
-		t.Fatalf("language = %q, want python-3.12", repo.listQuery.Language)
+	if repo.listQuery.Language != "python" {
+		t.Fatalf("language = %q, want python", repo.listQuery.Language)
 	}
 }
 
@@ -350,7 +412,7 @@ func TestListRejectsInvalidQuery(t *testing.T) {
 		},
 		{
 			name:  "unknown language",
-			query: ListQuery{Language: "ruby-3.3"},
+			query: ListQuery{Language: "ruby"},
 			field: "language",
 		},
 	}
@@ -445,14 +507,44 @@ func defaultTestMaxLimits() Limits {
 	}
 }
 
-type fakeLanguages map[string]language.Language
+type fakeLanguages map[string]language.Runtime
 
 func (f fakeLanguages) Get(slug string) (language.Language, bool) {
-	lang, ok := f[slug]
-	if !ok || !lang.Enabled {
+	runtime, ok := f.resolve(slug, "")
+	if !ok {
 		return language.Language{}, false
 	}
-	return lang, true
+	return language.Language{
+		Slug:           runtime.Slug,
+		Name:           runtime.Name,
+		DefaultVersion: runtime.Version,
+		Versions: []language.Version{
+			{
+				Version:       runtime.Version,
+				SourceFile:    runtime.SourceFile,
+				Compile:       runtime.Compile,
+				Run:           runtime.Run,
+				DefaultLimits: runtime.DefaultLimits,
+				Enabled:       true,
+			},
+		},
+		Enabled: true,
+	}, true
+}
+
+func (f fakeLanguages) Resolve(slug, version string) (language.Runtime, bool) {
+	return f.resolve(slug, version)
+}
+
+func (f fakeLanguages) resolve(slug, version string) (language.Runtime, bool) {
+	runtime, ok := map[string]language.Runtime(f)[slug]
+	if !ok {
+		return language.Runtime{}, false
+	}
+	if version != "" && version != runtime.Version {
+		return language.Runtime{}, false
+	}
+	return runtime, true
 }
 
 type fakeQueue struct {

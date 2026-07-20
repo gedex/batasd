@@ -23,6 +23,7 @@ type SubmissionRepository struct {
 const submissionColumns = `
 	token,
 	language_slug,
+	language_version,
 	source,
 	input,
 	expected_output,
@@ -81,6 +82,7 @@ func (r *SubmissionRepository) Create(ctx context.Context, sub *submission.Submi
 	_, err = r.db.Exec(ctx, `INSERT INTO submissions (
 		token,
 		language_slug,
+		language_version,
 		source,
 		input,
 		expected_output,
@@ -94,10 +96,11 @@ func (r *SubmissionRepository) Create(ctx context.Context, sub *submission.Submi
 		queued_at,
 		updated_at
 	) VALUES (
-		$1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, NULLIF($9::jsonb, 'null'::jsonb), $10, $11, $12, $13, $14
+		$1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, NULLIF($10::jsonb, 'null'::jsonb), $11, $12, $13, $14, $15
 	)`,
 		sub.Token,
 		sub.Language,
+		sub.LanguageVersion,
 		sub.Source,
 		sub.Input,
 		sub.ExpectedOutput,
@@ -199,6 +202,7 @@ func scanSubmission(row rowScanner) (*submission.Submission, error) {
 	err := row.Scan(
 		&sub.Token,
 		&sub.Language,
+		&sub.LanguageVersion,
 		&sub.Source,
 		&sub.Input,
 		&expectedOutput,

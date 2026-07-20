@@ -16,7 +16,7 @@ import (
 )
 
 func TestParseSubmissionListQuery(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/v1/submissions?limit=3&before=sub_1&status=accepted&language=python-3.12", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/submissions?limit=3&before=sub_1&status=accepted&language=python", nil)
 
 	query, err := parseSubmissionListQuery(req)
 	if err != nil {
@@ -31,8 +31,8 @@ func TestParseSubmissionListQuery(t *testing.T) {
 	if query.StatusCode != "accepted" {
 		t.Fatalf("status = %q, want accepted", query.StatusCode)
 	}
-	if query.Language != "python-3.12" {
-		t.Fatalf("language = %q, want python-3.12", query.Language)
+	if query.Language != "python" {
+		t.Fatalf("language = %q, want python", query.Language)
 	}
 }
 
@@ -59,9 +59,9 @@ func TestCreateWithWaitTimeoutReturnsAcceptedAndCurrentSubmission(t *testing.T) 
 		Repository: repo,
 		Queue:      &waitTestQueue{},
 		Languages: waitTestLanguages{
-			"python-3.12": {
-				Slug:    "python-3.12",
-				Enabled: true,
+			"python": {
+				Slug:    "python",
+				Version: "3.12",
 			},
 		},
 	})
@@ -72,7 +72,7 @@ func TestCreateWithWaitTimeoutReturnsAcceptedAndCurrentSubmission(t *testing.T) 
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/submissions?wait=true", strings.NewReader(`{
-		"language":"python-3.12",
+		"language":"python",
 		"source":"print(\"hello\")"
 	}`))
 	recorder := httptest.NewRecorder()
@@ -196,11 +196,39 @@ func TestParseSubmissionFieldsRejectsMixedWildcard(t *testing.T) {
 	}
 }
 
-type waitTestLanguages map[string]language.Language
+type waitTestLanguages map[string]language.Runtime
 
 func (l waitTestLanguages) Get(slug string) (language.Language, bool) {
-	lang, ok := l[slug]
-	return lang, ok && lang.Enabled
+	runtime, ok := l.Resolve(slug, "")
+	if !ok {
+		return language.Language{}, false
+	}
+	return language.Language{
+		Slug:           runtime.Slug,
+		Name:           runtime.Name,
+		DefaultVersion: runtime.Version,
+		Versions: []language.Version{
+			{
+				Version:    runtime.Version,
+				SourceFile: runtime.SourceFile,
+				Compile:    runtime.Compile,
+				Run:        runtime.Run,
+				Enabled:    true,
+			},
+		},
+		Enabled: true,
+	}, true
+}
+
+func (l waitTestLanguages) Resolve(slug, version string) (language.Runtime, bool) {
+	runtime, ok := l[slug]
+	if !ok {
+		return language.Runtime{}, false
+	}
+	if version != "" && version != runtime.Version {
+		return language.Runtime{}, false
+	}
+	return runtime, true
 }
 
 type waitTestQueue struct{}
