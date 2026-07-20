@@ -173,6 +173,14 @@ env GOCACHE=/private/tmp/codeexec-go-cache GOMODCACHE=/private/tmp/codeexec-go-m
 
 The OpenAPI 3.1 contract lives at `api/openapi.yaml`. The test suite checks that documented method/path pairs match the chi router.
 
+Smoke-test all catalog languages against a running API:
+
+```bash
+scripts/smoke-languages.sh --url http://localhost:18080
+```
+
+The smoke script submits `python`, `node`, `c`, `cpp`, `go`, `rust`, `java`, and `php`, then checks that each response is accepted, uses the expected resolved `language_version`, has the expected stdout, and has no stderr or compile output.
+
 ## Configuration
 
 Copy `.env.example` if you want local overrides:
