@@ -50,7 +50,7 @@
         "compile": ["go", "build", "-o", "main", "main.go"],
         "run": ["./main"],
         "default_limits": {
-          "cpu_time_ms": 10000,
+          "cpu_time_ms": 15000,
           "cpu_extra_time_ms": 3000,
           "wall_time_ms": 20000,
           "memory_kb": 1048576,

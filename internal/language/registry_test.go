@@ -135,8 +135,8 @@ func TestLoadCatalogGoAllowsColdCompileCPU(t *testing.T) {
 	if goLang.DefaultLimits == nil {
 		t.Fatal("go default limits are nil")
 	}
-	if goLang.DefaultLimits.CPUTimeMS != 10000 {
-		t.Fatalf("CPUTimeMS = %d, want 10000", goLang.DefaultLimits.CPUTimeMS)
+	if goLang.DefaultLimits.CPUTimeMS != 15000 {
+		t.Fatalf("CPUTimeMS = %d, want 15000", goLang.DefaultLimits.CPUTimeMS)
 	}
 	if goLang.DefaultLimits.CPUExtraMS != 3000 {
 		t.Fatalf("CPUExtraMS = %d, want 3000", goLang.DefaultLimits.CPUExtraMS)
