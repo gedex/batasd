@@ -115,8 +115,8 @@ func TestLoadCatalogCompiledLanguagesUseLargerFileLimit(t *testing.T) {
 			if lang.DefaultLimits == nil {
 				t.Fatal("default limits are nil")
 			}
-			if lang.DefaultLimits.MaxFileKB != 10240 {
-				t.Fatalf("MaxFileKB = %d, want 10240", lang.DefaultLimits.MaxFileKB)
+			if lang.DefaultLimits.MaxFileKB != 65536 {
+				t.Fatalf("MaxFileKB = %d, want 65536", lang.DefaultLimits.MaxFileKB)
 			}
 		})
 	}

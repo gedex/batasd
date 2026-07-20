@@ -502,7 +502,7 @@ func defaultTestMaxLimits() Limits {
 		StackKB:      64000,
 		MaxProcesses: 256,
 		MaxOutputKB:  4096,
-		MaxFileKB:    10240,
+		MaxFileKB:    65536,
 		Runs:         1,
 	}
 }

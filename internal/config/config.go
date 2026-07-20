@@ -125,7 +125,7 @@ func Load() (Config, error) {
 				StackKB:      envInt64("MAX_LIMIT_STACK_KB", 64000),
 				MaxProcesses: envInt("MAX_LIMIT_MAX_PROCESSES", 256),
 				MaxOutputKB:  envInt64("MAX_LIMIT_MAX_OUTPUT_KB", 4096),
-				MaxFileKB:    envInt64("MAX_LIMIT_MAX_FILE_KB", 10240),
+				MaxFileKB:    envInt64("MAX_LIMIT_MAX_FILE_KB", 65536),
 				Network:      envBool("MAX_LIMIT_NETWORK", false),
 				Runs:         envInt("MAX_LIMIT_RUNS", 20),
 			},
