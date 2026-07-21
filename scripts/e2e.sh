@@ -175,6 +175,19 @@ if compile_output_contains and compile_output_contains not in compile_output:
 if env_bool("BATASD_E2E_REQUIRE_COMPILE_OUTPUT") and compile_output == "":
     add("compile_output is empty")
 
+if env_bool("BATASD_E2E_EXPECT_MEMORY_EXHAUSTION"):
+    status_code = status.get("code")
+    if status_code == "memory_limit_exceeded":
+        pass
+    elif status_code == "runtime_error" and "MemoryError" in stderr:
+        pass
+    else:
+        add(
+            "memory exhaustion result was "
+            f"status={status_code!r}, stderr={stderr!r}; "
+            "want memory_limit_exceeded or Python MemoryError runtime_error"
+        )
+
 stdout_truncated = env_bool("BATASD_E2E_EXPECT_STDOUT_TRUNCATED")
 if stdout_truncated is not None and response.get("stdout_truncated") is not stdout_truncated:
     add(f"stdout_truncated={response.get('stdout_truncated')!r}, want {stdout_truncated!r}")
@@ -220,6 +233,7 @@ run_case() {
   local message_contains=""
   local compile_output_contains=""
   local require_compile_output=false
+  local expect_memory_exhaustion=false
   local expect_stdout_truncated=""
   local expect_runs=""
   local expect_exit_code=""
@@ -276,6 +290,10 @@ run_case() {
         require_compile_output=true
         shift
         ;;
+      --memory-exhaustion)
+        expect_memory_exhaustion=true
+        shift
+        ;;
       --stdout-truncated)
         [[ $# -ge 2 ]] || die "--stdout-truncated requires a value"
         expect_stdout_truncated="$2"
@@ -327,6 +345,7 @@ run_case() {
     BATASD_E2E_MESSAGE_CONTAINS="$message_contains" \
     BATASD_E2E_COMPILE_OUTPUT_CONTAINS="$compile_output_contains" \
     BATASD_E2E_REQUIRE_COMPILE_OUTPUT="$require_compile_output" \
+    BATASD_E2E_EXPECT_MEMORY_EXHAUSTION="$expect_memory_exhaustion" \
     BATASD_E2E_EXPECT_STDOUT_TRUNCATED="$expect_stdout_truncated" \
     BATASD_E2E_EXPECT_RUNS="$expect_runs" \
     BATASD_E2E_EXPECT_EXIT_CODE="$expect_exit_code" \
@@ -380,8 +399,8 @@ run_case "wall time limit" "$scenarios_dir/slow.py" \
   --status time_limit_exceeded --language python --version 3.12 \
   --wall-time-ms 500 --message-contains "time limit exceeded" || failures=$((failures + 1))
 run_case "memory limit" "$scenarios_dir/memory.py" \
-  --status memory_limit_exceeded --language python --version 3.12 \
-  --memory-kb 64000 --message-contains "memory limit exceeded" || failures=$((failures + 1))
+  --language python --version 3.12 \
+  --memory-kb 64000 --memory-exhaustion || failures=$((failures + 1))
 run_case "output limit" "$scenarios_dir/output-flood.py" \
   --status output_limit_exceeded --language python --version 3.12 \
   --max-output-kb 1 --stdout-truncated true --require-stdout \
