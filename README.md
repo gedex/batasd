@@ -181,6 +181,14 @@ scripts/smoke-languages.sh --url http://localhost:18080
 
 The smoke script submits `python`, `node`, `c`, `cpp`, `go`, `rust`, `java`, and `php`, then checks that each response is accepted, uses the expected resolved `language_version`, has the expected stdout, and has no stderr or compile output.
 
+Run the end-to-end fixture suite against a running API:
+
+```bash
+scripts/e2e.sh --url http://localhost:18080
+```
+
+The e2e suite uses `scripts/submit.sh` and repo-owned fixtures under `testdata/e2e/programs`. It covers accepted submissions for every catalog language plus wrong answer, runtime error, compile error, wall-time limit, memory limit, output limit/truncation, repeated runs, and `additional_files`. It is intended for Docker or isolate mode because it validates real sandbox statuses and limits.
+
 ## Configuration
 
 Copy `.env.example` if you want local overrides:
@@ -208,6 +216,7 @@ Important defaults:
 - `MAX_LIMIT_WALL_TIME_MS=30000`
 - `MAX_LIMIT_MEMORY_KB=2097152`
 - `MAX_LIMIT_MAX_PROCESSES=256`
+- `MAX_LIMIT_MAX_FILE_KB=65536`
 - `MAX_LIMIT_RUNS=20`
 
 The language catalog can set per-language-version default limits. `node`, `go`, `rust`, and `java` currently use larger memory or process profiles than the global defaults because their runtimes or compilers are heavier under sandbox limits. Submission-provided limits may lower or raise the per-request limits, but they cannot exceed `MAX_LIMIT_*` configuration values.
