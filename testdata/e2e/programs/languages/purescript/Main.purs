@@ -1,0 +1,3 @@
+-- hello from purescript
+-- Placeholder fixture for disabled catalog language: purescript.
+-- Catalog source_file: Main.purs.

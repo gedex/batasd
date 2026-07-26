@@ -156,6 +156,37 @@ func TestCreateRejectsUnsupportedLanguageVersion(t *testing.T) {
 	}
 }
 
+func TestCreateRejectsDisabledCatalogLanguage(t *testing.T) {
+	registry, err := language.LoadCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	service := NewService(ServiceConfig{
+		Repository: &fakeRepository{},
+		Queue:      &fakeQueue{},
+		Languages:  registry,
+		Limits:     defaultTestLimits(),
+	})
+
+	_, err = service.Create(context.Background(), CreateRequest{
+		Language: "ruby",
+		Source:   "puts 'ok'",
+	})
+	if err == nil {
+		t.Fatal("Create returned nil error, want validation error")
+	}
+	validation, ok := err.(ValidationError)
+	if !ok {
+		t.Fatalf("err = %T, want ValidationError", err)
+	}
+	if validation.Field != "language" {
+		t.Fatalf("field = %q, want language", validation.Field)
+	}
+	if validation.Message != "language is disabled" {
+		t.Fatalf("message = %q, want language is disabled", validation.Message)
+	}
+}
+
 func TestCreateRejectsRequestLimitsAboveMaxLimits(t *testing.T) {
 	service := NewService(ServiceConfig{
 		Repository: &fakeRepository{},

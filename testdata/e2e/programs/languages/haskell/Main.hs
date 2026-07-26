@@ -1,0 +1,3 @@
+-- hello from haskell
+-- Placeholder fixture for disabled catalog language: haskell.
+-- Catalog source_file: Main.hs.

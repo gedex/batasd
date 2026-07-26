@@ -27,7 +27,6 @@ Run with direct execution:
 
 ```bash
 env GOCACHE=/tmp/batasd-go-cache \
-  GOMODCACHE=/tmp/batasd-go-mod \
   go run ./cmd/batasd
 ```
 
@@ -36,7 +35,6 @@ Run with Docker execution:
 ```bash
 env SANDBOX_DRIVER=docker \
   GOCACHE=/tmp/batasd-go-cache \
-  GOMODCACHE=/tmp/batasd-go-mod \
   go run ./cmd/batasd
 ```
 
@@ -45,7 +43,6 @@ Run with isolate on Linux:
 ```bash
 env SANDBOX_DRIVER=isolate \
   GOCACHE=/tmp/batasd-go-cache \
-  GOMODCACHE=/tmp/batasd-go-mod \
   go run ./cmd/batasd
 ```
 
@@ -72,6 +69,8 @@ Useful endpoints:
 - `GET /v1/submissions`
 - `GET /v1/submissions/{token}`
 - `GET /v1/submissions/{token}/callbacks`
+
+`GET /v1/languages` returns the full language catalog. Catalog entries with `enabled: false` are discoverable but cannot be submitted until a runner/isolate toolchain and commands are configured for that language version. The catalog covers all 83 Exercism tracks and keeps `node` as a backward-compatible alias for JavaScript execution.
 
 Create a submission:
 
@@ -131,18 +130,13 @@ Defaults:
 
 Override with `--url`, `BATASD_SUBMISSIONS_URL`, `--token`, or `BATASD_TOKEN`.
 
-Supported language extensions:
+The helper detects common extensions for the catalog, including `.py`, `.js`, `.c`, `.cpp`, `.go`, `.rs`, `.java`, `.php`, `.rb`, `.ts`, `.cs`, `.fs`, `.kt`, `.lua`, `.r`, `.sql`, `.swift`, `.zig`, and many more. Ambiguous extensions, such as assembly or Pascal variants, may still need `--language`.
 
-- `.py` -> `python`
-- `.js`, `.mjs`, `.cjs` -> `node`
-- `.c` -> `c`
-- `.cc`, `.cpp`, `.cxx` -> `cpp`
-- `.go` -> `go`
-- `.rs` -> `rust`
-- `.java` -> `java`
-- `.php` -> `php`
+JavaScript files detect as the Exercism `javascript` slug. The older `node` slug remains available as an enabled compatibility alias.
 
 Java submissions use one source file named `Main.java` with class `Main`.
+
+Catalog-shaped fixtures under `testdata/e2e/programs/languages/<slug>/<source_file>` cover every catalog entry. Fixtures for disabled languages are placeholders for future toolchain work; submitting one directly returns `422 validation_failed` until that language version is marked `enabled`.
 
 ## Additional Files
 
@@ -194,9 +188,10 @@ Run Go tests:
 
 ```bash
 env GOCACHE=/tmp/batasd-go-cache \
-  GOMODCACHE=/tmp/batasd-go-mod \
   go test ./...
 ```
+
+Let Go use its default module cache for normal local development. If you set `GOMODCACHE` to a disposable directory such as `/tmp/batasd-go-mod` and see missing source files under that path, delete that custom module cache and let Go download modules again.
 
 Run the full e2e fixture suite against a running Docker or isolate API:
 
@@ -204,7 +199,17 @@ Run the full e2e fixture suite against a running Docker or isolate API:
 scripts/e2e.sh --url http://localhost:18080
 ```
 
-The e2e suite uses `scripts/submit.sh` and fixtures in `testdata/e2e/programs`. It covers accepted submissions for every catalog language plus wrong answer, runtime error, compile error, wall-time limit, memory exhaustion, output limit/truncation, repeated runs, and `additional_files`.
+Run only selected language cases:
+
+```bash
+scripts/e2e.sh --url http://localhost:18080 --lang c
+scripts/e2e.sh --url http://localhost:18080 --lang c, java, php
+scripts/e2e.sh --url http://localhost:18080 --lang=javascript,node
+```
+
+When `--lang` is set, scenario cases such as wrong answer, compile error, and limits are skipped.
+
+The e2e suite uses `scripts/submit.sh` and fixtures in `testdata/e2e/programs`. It covers accepted submissions for every enabled Exercism runner language, the `node` compatibility alias, wrong answer, runtime error, compile error, wall-time limit, memory exhaustion, output limit/truncation, repeated runs, and `additional_files`.
 
 Note: Python memory exhaustion can surface differently by sandbox. Docker usually reports `memory_limit_exceeded`; isolate may let Python raise `MemoryError` and return `runtime_error`. The e2e suite accepts both as the same memory-exhaustion behavior.
 

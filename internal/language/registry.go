@@ -98,7 +98,7 @@ func LoadCatalog() (*Registry, error) {
 			if version.SourceFile == "" {
 				return nil, fmt.Errorf("language %q version %q source_file cannot be empty", lang.Slug, version.Version)
 			}
-			if len(version.Run) == 0 {
+			if version.Enabled && len(version.Run) == 0 {
 				return nil, fmt.Errorf("language %q version %q run command cannot be empty", lang.Slug, version.Version)
 			}
 			if err := validateLimitOverrides(version.DefaultLimits); err != nil {
@@ -113,7 +113,7 @@ func LoadCatalog() (*Registry, error) {
 		if !ok {
 			return nil, fmt.Errorf("language %q default_version %q is not defined", lang.Slug, lang.DefaultVersion)
 		}
-		if !defaultVersion.Enabled {
+		if lang.Enabled && !defaultVersion.Enabled {
 			return nil, fmt.Errorf("language %q default_version %q is not enabled", lang.Slug, lang.DefaultVersion)
 		}
 		if _, exists := bySlug[lang.Slug]; exists {
@@ -166,24 +166,22 @@ func validateLimitOverrides(limits *LimitOverrides) error {
 	return nil
 }
 
-// List returns enabled languages sorted by slug.
+// List returns all catalog languages sorted by slug.
 func (r *Registry) List() []Language {
 	out := make([]Language, 0, len(r.list))
 	for _, lang := range r.list {
-		if lang.Enabled {
-			out = append(out, enabledLanguage(lang))
-		}
+		out = append(out, catalogLanguage(lang))
 	}
 	return out
 }
 
-// Get returns the enabled language family identified by slug.
+// Get returns the catalog language family identified by slug.
 func (r *Registry) Get(slug string) (Language, bool) {
 	lang, ok := r.bySlug[strings.TrimSpace(slug)]
-	if !ok || !lang.Enabled {
+	if !ok {
 		return Language{}, false
 	}
-	return enabledLanguage(lang), true
+	return catalogLanguage(lang), true
 }
 
 // Resolve returns a concrete enabled language version for execution.
@@ -213,13 +211,9 @@ func (r *Registry) Resolve(slug, version string) (Runtime, bool) {
 	return Runtime{}, false
 }
 
-func enabledLanguage(lang Language) Language {
-	versions := make([]Version, 0, len(lang.Versions))
-	for _, version := range lang.Versions {
-		if version.Enabled {
-			versions = append(versions, version)
-		}
-	}
+func catalogLanguage(lang Language) Language {
+	versions := make([]Version, len(lang.Versions))
+	copy(versions, lang.Versions)
 	lang.Versions = versions
 	return lang
 }

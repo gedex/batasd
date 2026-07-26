@@ -10,6 +10,11 @@ Options:
   --url URL             API base URL or submissions URL.
                         Default: BATASD_SUBMISSIONS_URL or http://localhost:18080/v1/submissions
   --token TOKEN         Bearer token. Default: BATASD_TOKEN or dev-token
+  --lang LANGS          Run only selected language cases. Accepts comma or
+                        whitespace separated slugs, for example:
+                        --lang c
+                        --lang c, java, php
+                        --lang=c,javascript,node
   --interval SECONDS    Poll interval passed to submit.sh. Default: 0.2
   -h, --help            Show this help.
 
@@ -36,6 +41,58 @@ scenarios_dir="$repo_root/testdata/e2e/programs/scenarios"
 submissions_url="${BATASD_SUBMISSIONS_URL:-http://localhost:18080/v1/submissions}"
 auth_token="${BATASD_TOKEN:-dev-token}"
 interval="0.2"
+selected_languages=()
+matched_languages=()
+
+add_language_filter() {
+  local raw="$1"
+  local part
+  raw="${raw//,/ }"
+  for part in $raw; do
+    [[ -n "$part" ]] || continue
+    selected_languages+=("$part")
+  done
+}
+
+language_filter_active() {
+  [[ "${#selected_languages[@]}" -gt 0 ]]
+}
+
+language_selected() {
+  local slug="$1"
+  local selected
+  if ! language_filter_active; then
+    return 0
+  fi
+  for selected in "${selected_languages[@]}"; do
+    if [[ "$selected" == "$slug" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+remember_matched_language() {
+  local slug="$1"
+  local matched
+  for matched in "${matched_languages[@]}"; do
+    if [[ "$matched" == "$slug" ]]; then
+      return
+    fi
+  done
+  matched_languages+=("$slug")
+}
+
+language_was_matched() {
+  local slug="$1"
+  local matched
+  for matched in "${matched_languages[@]}"; do
+    if [[ "$matched" == "$slug" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -48,6 +105,18 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 ]] || die "--token requires a value"
       auth_token="$2"
       shift 2
+      ;;
+    --lang)
+      shift
+      [[ $# -gt 0 ]] || die "--lang requires a value"
+      while [[ $# -gt 0 && "$1" != --* ]]; do
+        add_language_filter "$1"
+        shift
+      done
+      ;;
+    --lang=*)
+      add_language_filter "${1#--lang=}"
+      shift
       ;;
     --interval)
       [[ $# -ge 2 ]] || die "--interval requires a value"
@@ -237,6 +306,7 @@ run_case() {
   local expect_stdout_truncated=""
   local expect_runs=""
   local expect_exit_code=""
+  local submit_language=""
   local submit_args=()
 
   while [[ $# -gt 0 ]]; do
@@ -309,6 +379,11 @@ run_case() {
         expect_exit_code="$2"
         shift 2
         ;;
+      --submit-language)
+        [[ $# -ge 2 ]] || die "--submit-language requires a value"
+        submit_language="$2"
+        shift 2
+        ;;
       --input | --expected-output | --additional-files-zip | --cpu-time-ms | --cpu-extra-time-ms | --wall-time-ms | --memory-kb | --stack-kb | --max-processes | --max-output-kb | --max-file-kb | --runs | --network)
         [[ $# -ge 2 ]] || die "$1 requires a value"
         submit_args+=("$1" "$2")
@@ -319,6 +394,10 @@ run_case() {
         ;;
     esac
   done
+
+  if [[ -n "$submit_language" ]]; then
+    submit_args=("--language" "$submit_language" "${submit_args[@]}")
+  fi
 
   printf 'e2e %-28s ' "$label"
   local output
@@ -356,63 +435,92 @@ run_case() {
   printf 'ok\n'
 }
 
+run_language_case() {
+  local slug="$1"
+  shift
+
+  if ! language_selected "$slug"; then
+    return
+  fi
+
+  remember_matched_language "$slug"
+  if ! run_case "$@"; then
+    failures=$((failures + 1))
+  fi
+}
+
 failures=0
 
-run_case "language python" "$languages_dir/hello.py" \
+run_language_case "python" "language python" "$languages_dir/hello.py" \
   --status accepted --language python --version 3.12 \
-  --input Akeda --expected-output "hello from python: Akeda" --stdout "hello from python: Akeda" || failures=$((failures + 1))
-run_case "language node" "$languages_dir/hello.js" \
-  --status accepted --language node --version 22 \
-  --input Akeda --expected-output "hello from node: Akeda" --stdout "hello from node: Akeda" || failures=$((failures + 1))
-run_case "language c" "$languages_dir/hello.c" \
+  --input Akeda --expected-output "hello from python: Akeda" --stdout "hello from python: Akeda"
+run_language_case "javascript" "language javascript" "$languages_dir/hello.js" \
+  --status accepted --language javascript --version 22 \
+  --input Akeda --expected-output "hello from javascript: Akeda" --stdout "hello from javascript: Akeda"
+run_language_case "node" "language node alias" "$languages_dir/hello-node.js" \
+  --status accepted --language node --version 22 --submit-language node \
+  --input Akeda --expected-output "hello from node alias: Akeda" --stdout "hello from node alias: Akeda"
+run_language_case "c" "language c" "$languages_dir/hello.c" \
   --status accepted --language c --version gcc \
-  --input Akeda --expected-output "hello from c: Akeda" --stdout "hello from c: Akeda" || failures=$((failures + 1))
-run_case "language cpp" "$languages_dir/hello.cpp" \
+  --input Akeda --expected-output "hello from c: Akeda" --stdout "hello from c: Akeda"
+run_language_case "cpp" "language cpp" "$languages_dir/hello.cpp" \
   --status accepted --language cpp --version gcc \
-  --input Akeda --expected-output "hello from cpp: Akeda" --stdout "hello from cpp: Akeda" || failures=$((failures + 1))
-run_case "language go" "$languages_dir/hello.go" \
+  --input Akeda --expected-output "hello from cpp: Akeda" --stdout "hello from cpp: Akeda"
+run_language_case "go" "language go" "$languages_dir/hello.go" \
   --status accepted --language go --version 1.24 \
-  --input Akeda --expected-output "hello from go: Akeda" --stdout "hello from go: Akeda" || failures=$((failures + 1))
-run_case "language rust" "$languages_dir/hello.rs" \
+  --input Akeda --expected-output "hello from go: Akeda" --stdout "hello from go: Akeda"
+run_language_case "rust" "language rust" "$languages_dir/hello.rs" \
   --status accepted --language rust --version 1.88 \
-  --input Akeda --expected-output "hello from rust: Akeda" --stdout "hello from rust: Akeda" || failures=$((failures + 1))
-run_case "language java" "$languages_dir/Main.java" \
+  --input Akeda --expected-output "hello from rust: Akeda" --stdout "hello from rust: Akeda"
+run_language_case "java" "language java" "$languages_dir/Main.java" \
   --status accepted --language java --version 21 \
-  --input Akeda --expected-output "hello from java: Akeda" --stdout "hello from java: Akeda" || failures=$((failures + 1))
-run_case "language php" "$languages_dir/hello.php" \
+  --input Akeda --expected-output "hello from java: Akeda" --stdout "hello from java: Akeda"
+run_language_case "php" "language php" "$languages_dir/hello.php" \
   --status accepted --language php --version 8.3 \
-  --input Akeda --expected-output "hello from php: Akeda" --stdout "hello from php: Akeda" || failures=$((failures + 1))
+  --input Akeda --expected-output "hello from php: Akeda" --stdout "hello from php: Akeda"
 
-run_case "wrong answer" "$scenarios_dir/wrong-answer.py" \
-  --status wrong_answer --language python --version 3.12 \
-  --expected-output "expected output" --stdout "actual output" \
-  --message-contains "output did not match" || failures=$((failures + 1))
-run_case "runtime error" "$scenarios_dir/runtime-error.py" \
-  --status runtime_error --language python --version 3.12 \
-  --stderr-contains "runtime failure path" --exit-code 7 \
-  --message-contains "non-zero status" || failures=$((failures + 1))
-run_case "compile error" "$scenarios_dir/compile-error.c" \
-  --status compilation_error --language c --version gcc \
-  --require-compile-output --compile-output-contains "error" \
-  --message-contains "compilation failed" || failures=$((failures + 1))
-run_case "wall time limit" "$scenarios_dir/slow.py" \
-  --status time_limit_exceeded --language python --version 3.12 \
-  --wall-time-ms 500 --message-contains "time limit exceeded" || failures=$((failures + 1))
-run_case "memory limit" "$scenarios_dir/memory.py" \
-  --language python --version 3.12 \
-  --memory-kb 64000 --memory-exhaustion || failures=$((failures + 1))
-run_case "output limit" "$scenarios_dir/output-flood.py" \
-  --status output_limit_exceeded --language python --version 3.12 \
-  --max-output-kb 1 --stdout-truncated true --require-stdout \
-  --stdout-not-contains "BATASD_OUTPUT_SENTINEL" \
-  --message-contains "output limit exceeded" || failures=$((failures + 1))
-run_case "repeated runs" "$scenarios_dir/runs.py" \
-  --status accepted --language python --version 3.12 \
-  --runs 3 --runs-result 3 --expected-output "hello runs" --stdout "hello runs" || failures=$((failures + 1))
-run_case "additional files" "$scenarios_dir/additional-files.py" \
-  --status accepted --language python --version 3.12 \
-  --additional-files-zip "$additional_zip" \
-  --expected-output "hello from additional files" --stdout "hello from additional files" || failures=$((failures + 1))
+if language_filter_active; then
+  unmatched_languages=()
+  for selected_language in "${selected_languages[@]}"; do
+    if ! language_was_matched "$selected_language"; then
+      unmatched_languages+=("$selected_language")
+    fi
+  done
+  if [[ "${#unmatched_languages[@]}" -gt 0 ]]; then
+    die "no e2e language case for: ${unmatched_languages[*]}"
+  fi
+else
+  run_case "wrong answer" "$scenarios_dir/wrong-answer.py" \
+    --status wrong_answer --language python --version 3.12 \
+    --expected-output "expected output" --stdout "actual output" \
+    --message-contains "output did not match" || failures=$((failures + 1))
+  run_case "runtime error" "$scenarios_dir/runtime-error.py" \
+    --status runtime_error --language python --version 3.12 \
+    --stderr-contains "runtime failure path" --exit-code 7 \
+    --message-contains "non-zero status" || failures=$((failures + 1))
+  run_case "compile error" "$scenarios_dir/compile-error.c" \
+    --status compilation_error --language c --version gcc \
+    --require-compile-output --compile-output-contains "error" \
+    --message-contains "compilation failed" || failures=$((failures + 1))
+  run_case "wall time limit" "$scenarios_dir/slow.py" \
+    --status time_limit_exceeded --language python --version 3.12 \
+    --wall-time-ms 500 --message-contains "time limit exceeded" || failures=$((failures + 1))
+  run_case "memory limit" "$scenarios_dir/memory.py" \
+    --language python --version 3.12 \
+    --memory-kb 64000 --memory-exhaustion || failures=$((failures + 1))
+  run_case "output limit" "$scenarios_dir/output-flood.py" \
+    --status output_limit_exceeded --language python --version 3.12 \
+    --max-output-kb 1 --stdout-truncated true --require-stdout \
+    --stdout-not-contains "BATASD_OUTPUT_SENTINEL" \
+    --message-contains "output limit exceeded" || failures=$((failures + 1))
+  run_case "repeated runs" "$scenarios_dir/runs.py" \
+    --status accepted --language python --version 3.12 \
+    --runs 3 --runs-result 3 --expected-output "hello runs" --stdout "hello runs" || failures=$((failures + 1))
+  run_case "additional files" "$scenarios_dir/additional-files.py" \
+    --status accepted --language python --version 3.12 \
+    --additional-files-zip "$additional_zip" \
+    --expected-output "hello from additional files" --stdout "hello from additional files" || failures=$((failures + 1))
+fi
 
 if [[ "$failures" -gt 0 ]]; then
   die "$failures e2e case(s) failed"

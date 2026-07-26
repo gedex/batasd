@@ -1,0 +1,3 @@
+-- hello from futhark
+-- Placeholder fixture for disabled catalog language: futhark.
+-- Catalog source_file: main.fut.

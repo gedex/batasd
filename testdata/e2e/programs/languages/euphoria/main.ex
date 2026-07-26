@@ -1,0 +1,3 @@
+-- hello from euphoria
+-- Placeholder fixture for disabled catalog language: euphoria.
+-- Catalog source_file: main.ex.

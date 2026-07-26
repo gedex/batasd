@@ -1,0 +1,3 @@
+-- hello from elm
+-- Placeholder fixture for disabled catalog language: elm.
+-- Catalog source_file: Main.elm.

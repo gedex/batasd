@@ -1,0 +1,3 @@
+-- hello from moonscript
+-- Placeholder fixture for disabled catalog language: moonscript.
+-- Catalog source_file: main.moon.

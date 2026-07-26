@@ -10,7 +10,7 @@ Code execution service in Go with pluggable sandbox backends.
 - Stores submissions and callback attempts in PostgreSQL.
 - Runs workers from the same binary.
 - Supports `direct`, Docker, and Linux `isolate` sandbox drivers.
-- Ships a language catalog for `python`, `node`, `c`, `cpp`, `go`, `rust`, `java`, and `php`.
+- Ships a language catalog covering all 83 Exercism tracks; runnable entries are marked `enabled`.
 - Enforces time, memory, process, file, and output limits.
 - Supports expected-output judging, repeated runs, zipped `additional_files`, callbacks, pagination, field filtering, startup recovery, OpenAPI drift checks, and e2e fixtures.
 
@@ -22,7 +22,6 @@ docker compose build runner
 
 env SANDBOX_DRIVER=docker \
   GOCACHE=/tmp/batasd-go-cache \
-  GOMODCACHE=/tmp/batasd-go-mod \
   go run ./cmd/batasd
 ```
 

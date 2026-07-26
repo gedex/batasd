@@ -2,7 +2,8 @@
 
 - Add batch submission create/fetch APIs once single-submission execution is stable.
 - Generate clients or server stubs from the OpenAPI contract if consumers need them.
-- Add more language versions beyond the expanded single-file catalog.
+- Enable execution for disabled Exercism catalog tracks by adding runner/isolate toolchains, commands, and e2e fixtures.
+- Add more concrete versions for languages that already have executable toolchains.
 - Add multi-file project mode with user-provided compile and run scripts.
 - Add submission deletion APIs and related authorization policy.
 - Add durable production queue observability, metrics, and worker dashboards.

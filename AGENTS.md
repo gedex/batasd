@@ -12,7 +12,7 @@ Supported sandbox drivers:
 - `docker`: portable local/staging sandbox.
 - `isolate`: Linux production-style sandbox.
 
-Supported catalog languages: `python`, `node`, `c`, `cpp`, `go`, `rust`, `java`, `php`.
+The language catalog includes all 83 Exercism track slugs plus the backward-compatible `node` alias. Only languages and versions with `enabled: true` can be submitted for execution.
 
 ## Architecture Map
 
@@ -41,20 +41,19 @@ Supported catalog languages: `python`, `node`, `c`, `cpp`, `go`, `rust`, `java`,
 - Keep sandbox-specific behavior inside `internal/sandbox/{direct,docker,isolate}`.
 - Update `api/openapi.yaml` when routes, request fields, or response fields change. Tests catch chi route drift, public DTO property drift, and status enum drift.
 - Update migrations for schema changes. Do not edit old migrations after they have shipped.
-- Update `internal/language/catalog/languages.json` plus tests when changing languages, versions, commands, or defaults.
+- Update `internal/language/catalog/languages.json` plus tests when changing languages, versions, commands, enabled state, or defaults.
 - Keep `scripts/submit.sh` as the black-box client used by e2e scripts.
 - Prefer small, focused tests near the changed package.
 - Do not use port `8080` in examples or tests unless explicitly asked; it is commonly used by the proxy. Prefer `18080` or throwaway ports like `18086`.
 
 ## Verification Commands
 
-Commands below are POSIX/Linux friendly. Cache paths use disposable directories under `/tmp`; use another writable temp directory if your environment requires it.
+Commands below are POSIX/Linux friendly. `GOCACHE` uses a disposable directory under `/tmp`; leave `GOMODCACHE` unset for normal local runs so Go uses its stable default module cache.
 
 Go tests:
 
 ```bash
 env GOCACHE=/tmp/batasd-go-cache \
-  GOMODCACHE=/tmp/batasd-go-mod \
   go test ./...
 ```
 
@@ -65,7 +64,6 @@ docker compose up -d postgres
 docker compose build runner
 env SANDBOX_DRIVER=docker \
   GOCACHE=/tmp/batasd-go-cache \
-  GOMODCACHE=/tmp/batasd-go-mod \
   go run ./cmd/batasd
 ```
 
@@ -73,6 +71,7 @@ Full e2e:
 
 ```bash
 scripts/e2e.sh --url http://localhost:18080
+scripts/e2e.sh --url http://localhost:18080 --lang c, java, php
 ```
 
 Isolate playground:
@@ -84,7 +83,6 @@ env PATH=/usr/local/bin:/usr/local/jdk-21/bin:/usr/local/node-v22/bin:/usr/local
   HTTP_ADDR=127.0.0.1:18085 \
   SANDBOX_DRIVER=isolate \
   GOCACHE=/tmp/batasd-go-cache \
-  GOMODCACHE=/tmp/batasd-go-mod \
   go run ./cmd/batasd
 ```
 

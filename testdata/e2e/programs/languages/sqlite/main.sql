@@ -1,0 +1,3 @@
+-- hello from sqlite
+-- Placeholder fixture for disabled catalog language: sqlite.
+-- Catalog source_file: main.sql.

@@ -1,0 +1,3 @@
+-- hello from lua
+-- Placeholder fixture for disabled catalog language: lua.
+-- Catalog source_file: main.lua.

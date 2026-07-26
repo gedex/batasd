@@ -1,5 +1,125 @@
 [
   {
+    "slug": "8th",
+    "name": "8th",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.8th",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "abap",
+    "name": "ABAP",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.abap",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "arm64-assembly",
+    "name": "ARM64 Assembly",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.s",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "arturo",
+    "name": "Arturo",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.art",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "awk",
+    "name": "AWK",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.awk",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "ballerina",
+    "name": "Ballerina",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.bal",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "bash",
+    "name": "Bash",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.sh",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "batch",
+    "name": "Batch Script",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.bat",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
     "slug": "c",
     "name": "C",
     "default_version": "gcc",
@@ -7,8 +127,17 @@
       {
         "version": "gcc",
         "source_file": "main.c",
-        "compile": ["gcc", "main.c", "-O2", "-pipe", "-o", "main"],
-        "run": ["./main"],
+        "compile": [
+          "gcc",
+          "main.c",
+          "-O2",
+          "-pipe",
+          "-o",
+          "main"
+        ],
+        "run": [
+          "./main"
+        ],
         "default_limits": {
           "memory_kb": 262144,
           "max_processes": 64,
@@ -18,6 +147,96 @@
       }
     ],
     "enabled": true
+  },
+  {
+    "slug": "cairo",
+    "name": "Cairo",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.cairo",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "cfml",
+    "name": "CFML",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.cfm",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "clojure",
+    "name": "Clojure",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.clj",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "cobol",
+    "name": "COBOL",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.cob",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "coffeescript",
+    "name": "CoffeeScript",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.coffee",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "common-lisp",
+    "name": "Common Lisp",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.lisp",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
   },
   {
     "slug": "cpp",
@@ -27,8 +246,18 @@
       {
         "version": "gcc",
         "source_file": "main.cpp",
-        "compile": ["g++", "main.cpp", "-O2", "-pipe", "-std=c++20", "-o", "main"],
-        "run": ["./main"],
+        "compile": [
+          "g++",
+          "main.cpp",
+          "-O2",
+          "-pipe",
+          "-std=c++20",
+          "-o",
+          "main"
+        ],
+        "run": [
+          "./main"
+        ],
         "default_limits": {
           "memory_kb": 262144,
           "max_processes": 64,
@@ -40,6 +269,246 @@
     "enabled": true
   },
   {
+    "slug": "crystal",
+    "name": "Crystal",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.cr",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "csharp",
+    "name": "C#",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "Program.cs",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "d",
+    "name": "D",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.d",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "dart",
+    "name": "Dart",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.dart",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "delphi",
+    "name": "Delphi Pascal",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.pas",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "elixir",
+    "name": "Elixir",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.exs",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "elm",
+    "name": "Elm",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "Main.elm",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "emacs-lisp",
+    "name": "Emacs Lisp",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.el",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "erlang",
+    "name": "Erlang",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.erl",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "euphoria",
+    "name": "Euphoria",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.ex",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "factor",
+    "name": "Factor",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.factor",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "fortran",
+    "name": "Fortran",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.f90",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "free-pascal",
+    "name": "Free Pascal",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.pas",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "fsharp",
+    "name": "F#",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "Program.fs",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "futhark",
+    "name": "Futhark",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.fut",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "gleam",
+    "name": "Gleam",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.gleam",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
     "slug": "go",
     "name": "Go",
     "default_version": "1.24",
@@ -47,8 +516,15 @@
       {
         "version": "1.24",
         "source_file": "main.go",
-        "compile": ["sh", "-c", "go build -o main main.go \"$@\" 2>.batasd-go-build.err; status=$?; if [ \"$status\" -eq 0 ]; then rm -f .batasd-go-build.err; exit 0; fi; if [ -x main ] && grep -q \"go: failed to trim cache: Lock .*function not implemented\" .batasd-go-build.err; then rm -f .batasd-go-build.err; exit 0; fi; cat .batasd-go-build.err >&2; exit \"$status\"", "batasd-go-build"],
-        "run": ["./main"],
+        "compile": [
+          "sh",
+          "-c",
+          "go build -o main main.go \"$@\" 2>.batasd-go-build.err; status=$?; if [ \"$status\" -eq 0 ]; then rm -f .batasd-go-build.err; exit 0; fi; if [ -x main ] && grep -q \"go: failed to trim cache: Lock .*function not implemented\" .batasd-go-build.err; then rm -f .batasd-go-build.err; exit 0; fi; cat .batasd-go-build.err >&2; exit \"$status\"",
+          "batasd-go-build"
+        ],
+        "run": [
+          "./main"
+        ],
         "default_limits": {
           "cpu_time_ms": 15000,
           "cpu_extra_time_ms": 3000,
@@ -63,6 +539,51 @@
     "enabled": true
   },
   {
+    "slug": "groovy",
+    "name": "Groovy",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.groovy",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "haskell",
+    "name": "Haskell",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "Main.hs",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "idris",
+    "name": "Idris",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "Main.idr",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
     "slug": "java",
     "name": "Java",
     "default_version": "21",
@@ -70,8 +591,18 @@
       {
         "version": "21",
         "source_file": "Main.java",
-        "compile": ["javac", "-J-Xmx256m", "-J-XX:CompressedClassSpaceSize=64m", "Main.java"],
-        "run": ["java", "-Xmx256m", "-XX:CompressedClassSpaceSize=64m", "Main"],
+        "compile": [
+          "javac",
+          "-J-Xmx256m",
+          "-J-XX:CompressedClassSpaceSize=64m",
+          "Main.java"
+        ],
+        "run": [
+          "java",
+          "-Xmx256m",
+          "-XX:CompressedClassSpaceSize=64m",
+          "Main"
+        ],
         "default_limits": {
           "wall_time_ms": 20000,
           "memory_kb": 2097152,
@@ -84,7 +615,7 @@
     "enabled": true
   },
   {
-    "slug": "node",
+    "slug": "javascript",
     "name": "JavaScript",
     "default_version": "22",
     "versions": [
@@ -92,7 +623,10 @@
         "version": "22",
         "source_file": "main.js",
         "compile": [],
-        "run": ["node", "main.js"],
+        "run": [
+          "node",
+          "main.js"
+        ],
         "default_limits": {
           "memory_kb": 2097152,
           "max_processes": 256
@@ -103,6 +637,238 @@
     "enabled": true
   },
   {
+    "slug": "jq",
+    "name": "jq",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.jq",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "julia",
+    "name": "Julia",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.jl",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "kotlin",
+    "name": "Kotlin",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "Main.kt",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "lean",
+    "name": "Lean",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "Main.lean",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "lfe",
+    "name": "Lisp Flavoured Erlang",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.lfe",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "lua",
+    "name": "Lua",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.lua",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "mips",
+    "name": "MIPS Assembly",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.s",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "moonscript",
+    "name": "MoonScript",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.moon",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "nim",
+    "name": "Nim",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.nim",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "node",
+    "name": "JavaScript",
+    "default_version": "22",
+    "versions": [
+      {
+        "version": "22",
+        "source_file": "main.js",
+        "compile": [],
+        "run": [
+          "node",
+          "main.js"
+        ],
+        "default_limits": {
+          "memory_kb": 2097152,
+          "max_processes": 256
+        },
+        "enabled": true
+      }
+    ],
+    "enabled": true
+  },
+  {
+    "slug": "objective-c",
+    "name": "Objective-C",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.m",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "ocaml",
+    "name": "OCaml",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.ml",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "odin",
+    "name": "Odin",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.odin",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "perl5",
+    "name": "Perl",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.pl",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "pharo-smalltalk",
+    "name": "Pharo",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.st",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
     "slug": "php",
     "name": "PHP",
     "default_version": "8.3",
@@ -111,7 +877,10 @@
         "version": "8.3",
         "source_file": "main.php",
         "compile": [],
-        "run": ["php", "main.php"],
+        "run": [
+          "php",
+          "main.php"
+        ],
         "default_limits": {
           "memory_kb": 262144,
           "max_processes": 64
@@ -122,6 +891,66 @@
     "enabled": true
   },
   {
+    "slug": "powershell",
+    "name": "PowerShell",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.ps1",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "prolog",
+    "name": "Prolog",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.pro",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "purescript",
+    "name": "PureScript",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "Main.purs",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "pyret",
+    "name": "Pyret",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.arr",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
     "slug": "python",
     "name": "Python",
     "default_version": "3.12",
@@ -130,11 +959,119 @@
         "version": "3.12",
         "source_file": "main.py",
         "compile": [],
-        "run": ["python3", "main.py"],
+        "run": [
+          "python3",
+          "main.py"
+        ],
         "enabled": true
       }
     ],
     "enabled": true
+  },
+  {
+    "slug": "r",
+    "name": "R",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.r",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "racket",
+    "name": "Racket",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.rkt",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "raku",
+    "name": "Raku",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.raku",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "reasonml",
+    "name": "ReasonML",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.re",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "red",
+    "name": "Red",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.red",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "roc",
+    "name": "Roc",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.roc",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "ruby",
+    "name": "Ruby",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.rb",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
   },
   {
     "slug": "rust",
@@ -144,8 +1081,18 @@
       {
         "version": "1.88",
         "source_file": "main.rs",
-        "compile": ["rustc", "-O", "-C", "linker=/usr/bin/gcc", "main.rs", "-o", "main"],
-        "run": ["./main"],
+        "compile": [
+          "rustc",
+          "-O",
+          "-C",
+          "linker=/usr/bin/gcc",
+          "main.rs",
+          "-o",
+          "main"
+        ],
+        "run": [
+          "./main"
+        ],
         "default_limits": {
           "wall_time_ms": 20000,
           "memory_kb": 1048576,
@@ -156,5 +1103,260 @@
       }
     ],
     "enabled": true
+  },
+  {
+    "slug": "scala",
+    "name": "Scala",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "Main.scala",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "scheme",
+    "name": "Scheme",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.scm",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "sml",
+    "name": "Standard ML",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.sml",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "sqlite",
+    "name": "SQLite",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.sql",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "swift",
+    "name": "Swift",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.swift",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "tcl",
+    "name": "Tcl",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.tcl",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "typescript",
+    "name": "TypeScript",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.ts",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "uiua",
+    "name": "Uiua",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.ua",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "unison",
+    "name": "Unison",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.u",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "vbnet",
+    "name": "Visual Basic",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "Program.vb",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "vimscript",
+    "name": "Vim script",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.vim",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "vlang",
+    "name": "V",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.v",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "wasm",
+    "name": "WebAssembly",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.wat",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "wren",
+    "name": "Wren",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.wren",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "x86-64-assembly",
+    "name": "x86-64 Assembly",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.asm",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "yamlscript",
+    "name": "YAMLScript",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.ys",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
+  },
+  {
+    "slug": "zig",
+    "name": "Zig",
+    "default_version": "catalog",
+    "versions": [
+      {
+        "version": "catalog",
+        "source_file": "main.zig",
+        "compile": [],
+        "run": [],
+        "enabled": false
+      }
+    ],
+    "enabled": false
   }
 ]

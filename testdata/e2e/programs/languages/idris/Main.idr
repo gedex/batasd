@@ -1,0 +1,3 @@
+-- hello from idris
+-- Placeholder fixture for disabled catalog language: idris.
+-- Catalog source_file: Main.idr.

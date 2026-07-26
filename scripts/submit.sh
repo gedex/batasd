@@ -95,26 +95,236 @@ detect_language() {
     c)
       printf 'c\n'
       ;;
+    8th)
+      printf '8th\n'
+      ;;
+    abap)
+      printf 'abap\n'
+      ;;
+    art)
+      printf 'arturo\n'
+      ;;
+    awk)
+      printf 'awk\n'
+      ;;
+    bal)
+      printf 'ballerina\n'
+      ;;
+    bash | sh)
+      printf 'bash\n'
+      ;;
+    bat | cmd)
+      printf 'batch\n'
+      ;;
+    cairo)
+      printf 'cairo\n'
+      ;;
+    cfm | cfc)
+      printf 'cfml\n'
+      ;;
+    clj | cljc | cljs)
+      printf 'clojure\n'
+      ;;
+    cob | cbl)
+      printf 'cobol\n'
+      ;;
+    coffee)
+      printf 'coffeescript\n'
+      ;;
+    cs)
+      printf 'csharp\n'
+      ;;
     cc | cpp | cxx)
       printf 'cpp\n'
+      ;;
+    cr)
+      printf 'crystal\n'
+      ;;
+    d)
+      printf 'd\n'
+      ;;
+    dart)
+      printf 'dart\n'
+      ;;
+    el)
+      printf 'emacs-lisp\n'
+      ;;
+    erl)
+      printf 'erlang\n'
+      ;;
+    exs)
+      printf 'elixir\n'
+      ;;
+    ex)
+      printf 'euphoria\n'
+      ;;
+    factor)
+      printf 'factor\n'
+      ;;
+    f90 | f95 | f03 | f08)
+      printf 'fortran\n'
+      ;;
+    fs | fsx)
+      printf 'fsharp\n'
+      ;;
+    fut)
+      printf 'futhark\n'
+      ;;
+    gleam)
+      printf 'gleam\n'
       ;;
     go)
       printf 'go\n'
       ;;
+    groovy)
+      printf 'groovy\n'
+      ;;
+    hs)
+      printf 'haskell\n'
+      ;;
+    idr)
+      printf 'idris\n'
+      ;;
     java)
       printf 'java\n'
+      ;;
+    jl)
+      printf 'julia\n'
+      ;;
+    jq)
+      printf 'jq\n'
+      ;;
+    kt | kts)
+      printf 'kotlin\n'
+      ;;
+    lean)
+      printf 'lean\n'
+      ;;
+    lfe)
+      printf 'lfe\n'
+      ;;
+    lisp | lsp | cl)
+      printf 'common-lisp\n'
+      ;;
+    lua)
+      printf 'lua\n'
+      ;;
+    m)
+      printf 'objective-c\n'
+      ;;
+    ml | mli)
+      printf 'ocaml\n'
+      ;;
+    moon)
+      printf 'moonscript\n'
+      ;;
+    nim)
+      printf 'nim\n'
+      ;;
+    odin)
+      printf 'odin\n'
+      ;;
+    pas)
+      printf 'delphi\n'
+      ;;
+    pl)
+      printf 'perl5\n'
       ;;
     php)
       printf 'php\n'
       ;;
+    pro)
+      printf 'prolog\n'
+      ;;
+    ps1)
+      printf 'powershell\n'
+      ;;
+    purs)
+      printf 'purescript\n'
+      ;;
     py)
       printf 'python\n'
+      ;;
+    r)
+      printf 'r\n'
+      ;;
+    raku | rakumod)
+      printf 'raku\n'
+      ;;
+    rb)
+      printf 'ruby\n'
+      ;;
+    re)
+      printf 'reasonml\n'
+      ;;
+    red)
+      printf 'red\n'
+      ;;
+    rkt)
+      printf 'racket\n'
+      ;;
+    roc)
+      printf 'roc\n'
       ;;
     rs)
       printf 'rust\n'
       ;;
+    scala | sc)
+      printf 'scala\n'
+      ;;
+    scm)
+      printf 'scheme\n'
+      ;;
+    sml)
+      printf 'sml\n'
+      ;;
+    sql)
+      printf 'sqlite\n'
+      ;;
+    st)
+      printf 'pharo-smalltalk\n'
+      ;;
+    swift)
+      printf 'swift\n'
+      ;;
+    tcl)
+      printf 'tcl\n'
+      ;;
+    ts | mts | cts)
+      printf 'typescript\n'
+      ;;
+    ua)
+      printf 'uiua\n'
+      ;;
+    u)
+      printf 'unison\n'
+      ;;
+    v)
+      printf 'vlang\n'
+      ;;
+    vb)
+      printf 'vbnet\n'
+      ;;
+    vim)
+      printf 'vimscript\n'
+      ;;
+    wat | wasm)
+      printf 'wasm\n'
+      ;;
+    wren)
+      printf 'wren\n'
+      ;;
     js | mjs | cjs)
-      printf 'node\n'
+      printf 'javascript\n'
+      ;;
+    yaml | yml | ys)
+      printf 'yamlscript\n'
+      ;;
+    zig)
+      printf 'zig\n'
+      ;;
+    asm)
+      printf 'x86-64-assembly\n'
       ;;
     *)
       die "cannot detect language from .$ext; pass --language"

@@ -64,8 +64,12 @@ func (s *Service) Create(ctx context.Context, req CreateRequest) (*Submission, e
 		return nil, ValidationError{Field: "language", Message: "language is required"}
 	}
 	languageVersion := strings.TrimSpace(req.LanguageVersion)
-	if _, ok := s.languages.Get(languageSlug); !ok {
+	languageFamily, ok := s.languages.Get(languageSlug)
+	if !ok {
 		return nil, ValidationError{Field: "language", Message: "unsupported language"}
+	}
+	if !languageFamily.Enabled {
+		return nil, ValidationError{Field: "language", Message: "language is disabled"}
 	}
 	lang, ok := s.languages.Resolve(languageSlug, languageVersion)
 	if !ok {

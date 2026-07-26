@@ -1,0 +1,3 @@
+-- hello from lean
+-- Placeholder fixture for disabled catalog language: lean.
+-- Catalog source_file: Main.lean.

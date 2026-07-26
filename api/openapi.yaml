@@ -50,10 +50,10 @@ paths:
   /v1/languages:
     get:
       tags: [languages]
-      summary: List enabled languages
+      summary: List language catalog
       responses:
         "200":
-          description: Enabled languages.
+          description: Language catalog. Entries with enabled=false are discoverable but cannot be submitted.
           content:
             application/json:
               schema:
@@ -65,7 +65,7 @@ paths:
   /v1/languages/{slug}:
     get:
       tags: [languages]
-      summary: Fetch one enabled language
+      summary: Fetch one catalog language
       parameters:
         - $ref: "#/components/parameters/LanguageSlug"
       responses:
